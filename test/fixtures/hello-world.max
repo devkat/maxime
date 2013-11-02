@@ -1,0 +1,4 @@
+def say(s) =
+  println(s)
+
+say("hello world")
