@@ -1,7 +1,7 @@
-/* ----------------------------------------------------------------------
+/* ======================================================================
    Lexical grammar
    http://www.cjihrig.com/development/jsparser/ecmascript.jison
-   ---------------------------------------------------------------------- */
+   ====================================================================== */
 %lex
 
 DecimalDigit [0-9]
@@ -18,6 +18,7 @@ Identifier {IdentifierStart}{IdentifierPart}*
 */
 LowerCaseIdentifier [a-z][_a-zA-Z0-9]*
 UpperCaseIdentifier [A-Z][_a-zA-Z0-9]*
+MethodIdentifier [_a-zA-Z0-9+-*/#%&?!©:]+
 ExponentIndicator [eE]
 SignedInteger [+-]?[0-9]+
 DecimalIntegerLiteral [0]|({NonZeroDigit}{DecimalDigits}*)
@@ -36,6 +37,7 @@ EscapeSequence {CharacterEscapeSequence}|{OctalEscapeSequence}|{HexEscapeSequenc
 DoubleStringCharacter ([^\"\\\n\r]+)|(\\{EscapeSequence})|{LineContinuation}
 SingleStringCharacter ([^\'\\\n\r]+)|(\\{EscapeSequence})|{LineContinuation}
 StringLiteral (\"{DoubleStringCharacter}*\")|(\'{SingleStringCharacter}*\')
+BacktickLiteral \`[^`]*\`
 RegularExpressionNonTerminator [^\n\r]
 RegularExpressionBackslashSequence \\{RegularExpressionNonTerminator}
 RegularExpressionClassChar [^\n\r\]\\]|{RegularExpressionBackslashSequence}
@@ -53,7 +55,19 @@ RegularExpressionLiteral {RegularExpressionBody}\/{RegularExpressionFlags}
                                         this.begin("INITIAL");
                                         return "REGEXP_LITERAL";
                                    %}
-\s+                                %{
+((\r\n|\r|\n)\s+)*\r\n|\r|\n       return "NEWLINE";
+^[ ]+                              %{
+                                        var oldIndent = parser.indent;
+                                        parser.indent = yytext.length;
+                                        var
+                                          diff = parser.indent - oldIndent,
+                                          sign = diff === 0 ? 0 : diff / Math.abs(diff);
+                                        switch (sign) {
+                                        case 1: return "INDENT";
+                                        case -1: return "OUTDENT";
+                                        }
+                                   %}
+"DISABLED"                         %{
                                         var match = /^\s*[\r\n]([^\r\n]*)$/.exec(yytext);
                                         if (match && match.length > 0) {
                                           var oldIndent = parser.indent;
@@ -61,7 +75,6 @@ RegularExpressionLiteral {RegularExpressionBody}\/{RegularExpressionFlags}
                                           var
                                             diff = parser.indent - oldIndent,
                                             sign = diff === 0 ? 0 : diff / Math.abs(diff);
-                                          //console.log(match, " -> ", sign);
                                           switch (sign) {
                                           case 1: return "INDENT";
                                           case -1: return "OUTDENT";
@@ -79,11 +92,11 @@ RegularExpressionLiteral {RegularExpressionBody}\/{RegularExpressionFlags}
                                             parser.newLine = true;
                                         }
                                    %}
-"val"                              return "VAL";
 "def"                              return "DEF";
+"data"                             return "DATA";
+"val"                              return "VAL";
+{BacktickLiteral}                  return "BACKTICK_LITERAL";
 {StringLiteral}                    return "STRING_LITERAL";
-{LowerCaseIdentifier}              return "LOWERCASE_IDENTIFIER";
-{UpperCaseIdentifier}              return "UPPERCASE_IDENTIFIER";
 {DecimalLiteral}                   return "NUMERIC_LITERAL";
 {HexIntegerLiteral}                return "NUMERIC_LITERAL";
 {OctalIntegerLiteral}              return "NUMERIC_LITERAL";
@@ -94,14 +107,19 @@ RegularExpressionLiteral {RegularExpressionBody}\/{RegularExpressionFlags}
 "["                                return "[";
 "]"                                return "]";
 "="                                return "=";
+":"                                return ":";
+","                                return ",";
+"|"                                return "|";
+{LowerCaseIdentifier}              return "LOWERCASE_IDENTIFIER";
+{UpperCaseIdentifier}              return "UPPERCASE_IDENTIFIER";
 <<EOF>>                            return "EOF";
 .                                  return "ERROR";
 
 /lex
 
-/* ----------------------------------------------------------------------
+/* ======================================================================
    Grammar rules
-   ---------------------------------------------------------------------- */
+   ====================================================================== */
 
 /* operator associations and precedence */
 
@@ -114,89 +132,11 @@ RegularExpressionLiteral {RegularExpressionBody}\/{RegularExpressionFlags}
 
 %% /* language grammar */
 
-lcIdentifier
-  : LOWERCASE_IDENTIFIER { $$ = new parser.ast.Identifier($1); }
-  ;
-
-ucIdentifier
-  : UPPERCASE_IDENTIFIER { $$ = new parser.ast.Identifier($1); }
-  ;
-
-stringLiteral
-  : STRING_LITERAL { $$ = new parser.ast.Literal($1); }
-  ;
-
-numericLiteral
-  : NUMERIC_LITERAL { $$ = new parser.ast.Literal(parseNumericLiteral($1)); }
-  ;
-
-statements
-  : statement { $$ = [ $1 ]; }
-  | statements statement { $$ = $1.concat($2); }
-  | statements "NEWLINE" statement { $$ = $1.concat($3); }
-  ;
-
-statement
-  : expr { $$ = $1; }
-  | decl { $$ = $1; }
-  ;
-
-expr
-  : call { $$ = $1; }
-  | lcIdentifier { $$ = $1; }
-  | stringLiteral { $$ = $1; }
-  | numericLiteral { $$ = $1; }
-  | REGEXP_LITERAL { $$ = $1; }
-  ;
-
-call
-  : lcIdentifier "(" args ")" { $$ = new parser.ast.CallExpr($1, $3); }
-  ;
-
-args
-  : /* empty */ { $$ = []; }
-  | argList { $$ = $1; }
-  ;
-  
-argList
-  : expr { $$ = [ $1 ]; }
-  | argList "," expr { $$ = $1.concat($2); }
-  ;
-
-decl
-  : valDecl { $$ = $1; }
-  | defDecl { $$ = $1; }
-  ;
-
-valDecl
-  : "VAL" lcIdentifier "=" expr { $$ = new parser.ast.ValDecl($2, $4); }
-  ;
-
-defDecl
-  : "DEF" lcIdentifier "(" params ")" "=" expr { $$ = new parser.ast.DefDecl($2, $4, $7); }
-  | "DEF" lcIdentifier "(" params ")" "=" "INDENT" statements "OUTDENT" { $$ = new parser.ast.DefDecl($2, $4, $8); }
-  ;
-
-params
-  : /* empty */ { $$ = []; }
-  | param { $$ = [ $1 ]; }
-  | params "," param { $$ = $1.concat($3); }
-  ;
-
-param
-  : lcIdentifier { $$ = new parser.ast.Param($1); }
-  | lcIdentifier ":" ucIdentifier { $$ = new parser.ast.Param($1, $3); }
-  ;
-
-program
-  : statements EOF { $$ = new parser.ast.Program($1); return $$; }
-  ;
-
 %%
 
-/* ----------------------------------------------------------------------
+/* ======================================================================
    Helper functions
-   ---------------------------------------------------------------------- */
+   ====================================================================== */
 
 var _parse = parser.parse;
 parser.parse = function(source, args) {
@@ -210,42 +150,120 @@ function parseNumericLiteral(literal) {
     : Number(literal);
 }
 
-/* ----------------------------------------------------------------------
+function parseQuotedLiteral(literal) {
+  return literal.substring(1, literal.length - 1);
+}
+
+function srcLoc(source, firstToken, lastToken) {
+  return new SourceLocation(source,
+    new Position(firstToken.first_line, firstToken.first_column),
+    new Position(lastToken.last_line, lastToken.last_column));
+}
+
+function SourceLocation(source, start, end) {
+  this.source = source;
+  this.start = start;
+  this.end = end;
+}
+
+function Position(line, column) {
+  this.line = line;
+  this.column = column;
+}
+
+/* ======================================================================
    AST constructors
-   ---------------------------------------------------------------------- */
+   ====================================================================== */
 
 parser.ast = {};
 
-parser.ast.Program = function(statements) {
-  this.statements = statements;
-};
-
-parser.ast.CallExpr = function(funcIdentifier, args) {
-  this.funcIdentifier = funcIdentifier;
+parser.ast.ConstructorCall = function(identifier, args, loc) {
+  this.loc = loc,
+  this.identifier = identifier;
   this.args = args;
+  this.toString = function() { return 'ConstructorCall'; };
 }
 
-parser.ast.Literal = function(val) {
-  this.value = val;
-}
-
-parser.ast.Identifier = function(name) {
-  this.name = name;
-}
-
-parser.ast.ValDecl = function(id, expr) {
-  this.identifier = id;
-  this.expr = expr;
-}
-
-parser.ast.DefDecl = function(id, params, body) {
+parser.ast.DefDecl = function(id, params, body, loc) {
+  this.loc = loc,
   this.identifier = id;
   this.params = params;
   this.body = body;
+  this.toString = function() { return 'DefDecl'; };
 }
 
-parser.ast.Param = function(valId, typeId) {
+parser.ast.FunctionCall = function(identifier, args, loc) {
+  this.loc = loc,
+  this.identifier = identifier;
+  this.args = args;
+  this.toString = function() { return 'FunctionCall'; };
+}
+
+parser.ast.Identifier = function(name, loc) {
+  this.loc = loc,
+  this.name = name;
+  this.toString = function() { return 'Identifier'; };
+}
+
+parser.ast.Literal = function(val, loc) {
+  this.loc = loc,
+  this.value = val;
+  this.toString = function() { return 'Literal'; };
+}
+
+parser.ast.NativeExpr = function(expr, loc) {
+  this.loc = loc;
+  this.expr = expr;
+  this.toString = function() { return 'NativeExpr'; };
+}
+
+parser.ast.Param = function(valId, typeId, loc) {
+  this.loc = loc,
   this.valueIdentifier = valId;
   this.typeIdentifier = typeId;
+  this.toString = function() { return 'Param'; };
 }
 
+parser.ast.Program = function(statements, loc) {
+  this.loc = loc,
+  this.statements = statements;
+  this.toString = function() { return 'Program'; };
+};
+
+parser.ast.TypeConstructorDecl = function(id, args, loc) {
+  this.identifier = id;
+  this.args = args;
+  this.loc = loc;
+  this.toString = function() { return 'TypeConstructorDecl'; };
+};
+
+parser.ast.TypeDecl = function(typeId, loc) {
+  this.loc = loc,
+  this.typeIdentifier = typeId;
+  this.toString = function() { return 'TypeDecl'; };
+}
+
+parser.ast.ValDecl = function(id, expr, loc) {
+  this.loc = loc,
+  this.identifier = id;
+  this.expr = expr;
+  this.toString = function() { return 'ValDecl'; };
+}
+
+parser.ast.ValRef = function(id, loc) {
+  this.loc = loc;
+  this.identifier = id;
+}
+
+/*
+parser.ast.ConstructorCall
+parser.ast.DefDecl
+parser.ast.FunctionCall
+parser.ast.Identifier
+parser.ast.Literal
+parser.ast.NativeExpr
+parser.ast.Param
+parser.ast.Program
+parser.ast.TypeDecl
+parser.ast.ValDecl
+*/
