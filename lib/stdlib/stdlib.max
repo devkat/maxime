@@ -1,9 +1,0 @@
-data String = Str
-
-data Number = Num
-
-data List a = Nil | Cons a (List a)
-
-def println x:String = `console.log(x)`
-
-//def concat(elem:String, list:List) = List(

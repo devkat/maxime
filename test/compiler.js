@@ -10,7 +10,7 @@ function compilerOutput(s) {
 }
 
 function fixtureCompilerOutput(file) {
-  return compilerOutput(fs.readFileSync(path.join('test', 'fixtures', file + '.max'), 'utf8'));
+  return compilerOutput(path.join('test', 'fixtures', file + '.max'));
 }
 
 function fixtureExpectedOutput(file) {
