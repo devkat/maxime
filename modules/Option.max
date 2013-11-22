@@ -1,7 +1,12 @@
-data Option x = Some x | None
+class Option[a]() {
+  def map(f: a => _) = ""
+}
 
-def map o f =
-  o match
-    case None() => None()
-    case Some x => Some (f x)
+class None() extends Option {
+  def map() = None()
+}
+
+class Some[a](x:a) extends Option[a] {
+  def map(f: a => _) = Some(f(x))
+}
 

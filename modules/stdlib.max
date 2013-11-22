@@ -1,5 +1,5 @@
-data String = Str
+class String() {
+  def println() = `console.log(this)`
+}
 
-def println x:String = `console.log(x)`
-
-data Number = Num
+class Number()
