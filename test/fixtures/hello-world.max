@@ -1,4 +1,4 @@
-import "stdlib", "list"
+import "stdlib", "List", "Option"
 
 def say s:String =
   println s
@@ -8,3 +8,7 @@ say "hello world"
 val list2 = Cons 1 (Cons 2 (Cons 3 (Nil ())))
 
 println list2
+
+val some = Some "hello"
+
+forEach some println

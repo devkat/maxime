@@ -1,0 +1,7 @@
+data Option x = Some x | None
+
+def map o f =
+  o match
+    case None() => None()
+    case Some x => Some (f x)
+
