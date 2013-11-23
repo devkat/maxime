@@ -1,12 +1,10 @@
-class Option[a]() {
-  def map(f: a => _) = ""
-}
+class Option[a]() extends Functor[a] {
 
-class None() extends Option {
-  def map() = None()
+  ctor None()
+  ctor Some(a:a)
+  
+  def map(o: Option[a], f: a -> b) -> Option[b] =
+    o match
+      case Some(s) => Some(f(s))
+      case None() => None()
 }
-
-class Some[a](x:a) extends Option[a] {
-  def map(f: a => _) = Some(f(x))
-}
-

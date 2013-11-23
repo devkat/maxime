@@ -1,0 +1,16 @@
+type Node {
+
+  ctor Node(parent: Option[Node], localName: String, attrs: Map[String, String])
+  
+  def localName (n: Node) -> String = n.localName
+  def parent (n: Node) -> Node = n.parent
+  
+  def attr (n: Node, name: String) -> Option[String] =
+    get(attrs, name)
+  
+}
+
+/*
+def mkNode(j:JSObj) -> Node =
+  Node
+*/

@@ -1,0 +1,17 @@
+type Map[a, b] {
+
+  ctor EmptyMap()
+  ctor Map(m: Map[a, b], key: a, val: b)
+
+  def put(m: Map[a, b], key: a, val: b) -> Map[a, b] =
+    containsKey(m, a) match
+      case True() => replace(m, a, b)
+      case False() => m
+
+  def get(m: Map[a, b], key: a) -> Option[b] =
+    m match
+      case EmptyMap() => None()
+      case Map(m, k, val) =>
+        if (k === key) then val else get(m, key)
+
+}
