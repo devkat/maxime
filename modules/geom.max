@@ -1,21 +1,20 @@
-class Shape[s] {
-  def bounds: s -> Rect
-}
+class Shape[s]
+  def bounds (shape: s) -> Rect
 
-type Point {
-  ctor Point(x: Number, y: Number)
+
+class Point is Shape
+  Point(x: Number, y: Number)
   def swap (p: Point) -> Point = Point(p.y, p.x)
-}
 
-type Line extends Shape[Line] {
-  ctor Line(x1: Number, y1: Number, x2: Number, y2: Number)
+
+class Line is Shape[Line]
+  Line(x1: Number, y1: Number, x2: Number, y2: Number)
   
   def bounds (l: Line) -> Rect =
-    Rect(min(l.x1, l.x2), min(l.y1, l.y2), abs(l.x2 - l.x1), abs(l.y2 - l.y1))
-}
+    Rect(min(l.x1, l.x2), min(l.y1, l.y2), abs(minus(l.x2, l.x1)), abs(minus(l.y2, l.y1)))
 
-type Rect extends Shape[Rect] {
-  ctor Rect(x: Number, y: Number, w: Number, h: Number)
+
+class Rect is Shape[Rect]
+  Rect(x: Number, y: Number, w: Number, h: Number)
   def bounds (r: Rect) -> Rect = Rect(0, 0, r.w, r.h)
-}
 

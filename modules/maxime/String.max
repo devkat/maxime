@@ -1,0 +1,2 @@
+class String
+  def println (s:String) = `console.log(s)`

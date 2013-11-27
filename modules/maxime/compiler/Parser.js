@@ -1,3 +1,4 @@
+
 var
   Parser = require("jison").Parser,
   sprintf = require('sprintf');
@@ -15,9 +16,9 @@ module.exports = new Parser({
    Structure
    ---------------------------------------------------------------------- */
 
-    "module": [
-      [ "statements EOF", "$$ = new yy.Module($1);" + loc(1, 2) + "return $$;" ],
-      [ "NEWLINE statements EOF", "$$ = new yy.Module($2);" + loc(1, 3) + "return $$;" ]
+    "program": [
+      [ "statements EOF", "$$ = new yy.Program($1);" + loc(1, 2) + "return $$;" ],
+      [ "NEWLINE statements EOF", "$$ = new yy.Program($2);" + loc(1, 3) + "return $$;" ]
     ],
     
     "statements": [
@@ -37,12 +38,7 @@ module.exports = new Parser({
       [ "atomicExpr", "$$ = $1;" ],
       [ "ref", "$$ = $1;" ],
       [ "literal", "$$ = $1;" ],
-      [ "nativeExpr", "$$ = $1;" ],
-      [ "binaryExpr", "$$ = $1;" ]
-    ],
-    
-    "binaryExpr": [
-      [ "inlineExpr OPERATOR inlineExpr", "$$ = new yy.BinaryExpr($1, $2, $3);" + loc(1, 3) ]
+      [ "nativeExpr", "$$ = $1;" ]
     ],
     
     "statementExpr": [
@@ -65,12 +61,12 @@ module.exports = new Parser({
 
     "qualifiedModuleNames": [
       [ "qualifiedModuleName", "$$ = [ $1 ];" ],
-      [ "qualifiedModuleNames , qualifiedModuleName", "$$ = $1.concat([ $3 ]);" ]
+      [ "qualifiedModuleName , qualifiedModuleName", "$$ = $1.concat([ $3 ]);" ]
     ],
     
     "qualifiedModuleName": [
       [ "identifier", "$$ = [ $1 ];" ],
-      [ "qualifiedModuleName . identifier", "$$ = $1.concat([ $3 ]);" ]
+      [ "qualifiedModuleName . identifier", "$$ = $1.concat($3);" ]
     ],
 
 /* ----------------------------------------------------------------------

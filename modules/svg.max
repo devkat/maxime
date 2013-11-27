@@ -1,22 +1,23 @@
-type LengthUnit {
-  ctor LengthUnit(pxFactor: Num)
-}
+class LengthUnit
+  LengthUnit(pxFactor: Num)
 
 val px = LengthUnit(1)
 val mm = LengthUnit(25.4)
 
-type Length {
-  ctor Length(value: Num, unit: LengthUnit)
-  def convert (l: Length, targetUnit: Unit) -> Length =
-    Length(l.value / l.unit.pxFactor * targetUnit.pxFactor, targetUnit)
-}
 
+class Length
+  Length(value: Num, unit: LengthUnit)
+  def convert (l: Length, targetUnit: Unit) -> Length =
+    Length(times(div(l.value, l.unit.pxFactor), targetUnit.pxFactor), targetUnit)
+
+/*
 def matrixToString(m: Matrix) -> Unit =
   sprintf("transform(%d %d %d %d %d %d)", [ m.a, m.b, m.c, m.d, m.e, m.f ])
+*/
 
-class Transformable[t] {
+class Transformable[t]
   def setMatrix(node: t, m: Matrix) -> Unit
-}
+
 
 /*
 mixin TransformableImpl {
@@ -24,8 +25,5 @@ mixin TransformableImpl {
     node.setAttr("transform", matrixToString(m))
 }
 */
-type Line extends Transformable {
-
-  ctor SvgLine(n: Node)
-  
-}
+class Line is Transformable
+  SvgLine(n: Node)

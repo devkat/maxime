@@ -1,8 +1,8 @@
-import "stdlib", "List", "Option"
+import maxime.List, maxime.Option
 
 def say(s:String) = println(s)
 
-say("hello world")
+//say("hello world")
 
 //val list2 = Cons(1, (Cons 2 (Cons 3 (Nil ())))
 

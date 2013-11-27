@@ -5,30 +5,11 @@ type JSObj {
 }
 */
 
-class Bool {
-  True()
-  False()
-  
-  def not (b: Bool) -> Bool =
-    b match
-      case True() => False()
-      case False() => True()
-}
-
-class String {
-  def println () = `console.log(this)`
-}
-
-class Number {
-  def toString (n:Number) = `n.toString()`
-}
-
-class Functor[f] {
+class Functor[f]
   def map (functor: f[a], func: a -> b) -> f[b]
-}
 
-class Pair[a, b] {
+
+class Pair[a, b]
   Pair(fst: a, snd: b)
   def fst (p: Pair[a, b]) -> a = p.fst
   def snd (p: Pair[a, b]) -> b = p.snd
-}

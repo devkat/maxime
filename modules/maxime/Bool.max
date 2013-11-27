@@ -1,0 +1,9 @@
+class Bool is Printable
+  True()
+  False()
+  
+  def not (b: Bool) -> Bool =
+    b match
+      case True() => False()
+      case False() => True()
+

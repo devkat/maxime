@@ -1,16 +1,51 @@
 var
+  _ = require('lodash'),
+  sprintf = require('sprintf'),
   vows = require('vows'),
   assert = require('assert'),
   compile = require('../lib/compile'),
   fs = require('fs'),
-  path = require('path');
+  path = require('path'),
+  srcDir = path.join('test', 'maxime'),
+  targetDir = path.join('build', 'test'),
+  filesystem = require('../lib/filesystem'),
+  wrench = require('wrench');
 
-function compilerOutput(s) {
-  return eval(compile(s));
+var compiled = false;
+
+function loadStdLib() {
+  var basePath = path.join(targetDir, 'maxime');
+  return _.flatten([
+    path.join('build', 'runtime', 'Maxime.js'),
+    filesystem.findFiles(basePath, /\.js$/).map(function(f) {
+      return path.join(basePath, f);
+    })
+  ]).map(function(file) {
+    return fs.readFileSync(file);
+  }).join('\n');
+}
+
+function loadModule(name) {
+  return loadStdLib() + '\n' + fs.readFileSync(path.join(targetDir, 'fixtures', name + '.js'), 'utf8');
+}
+
+function compilerOutput(file) {
+  if (!compiled) {
+    wrench.copyDirSyncRecursive('runtime', path.join('build', 'runtime'), {
+      forceDelete: true,
+      preserveFiles: false
+    });
+    compile([ 'modules', srcDir ], targetDir);
+    compiled = true;
+  }
+  //var code = loadModule(file) + sprintf('\nMaxime.getModule("fixtures.%s")();', file);
+  var code = loadModule(file);
+  //console.log(code);
+  return eval(code);
 }
 
 function fixtureCompilerOutput(file) {
-  return compilerOutput(path.join('test', 'fixtures', file + '.max'));
+  return compilerOutput(file);
 }
 
 function fixtureExpectedOutput(file) {
@@ -45,7 +80,7 @@ vows
   .describe('Compiler')
   .addBatch({
     'Compile': {
-      topic: 'hello-world',
+      topic: 'HelloWorld',
       'Hello World': verifyResult
     }
   })
