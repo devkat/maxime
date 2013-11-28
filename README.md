@@ -26,7 +26,7 @@ Functor class:
 
 ```
 class Functor[f]
-  def map (functor: f[a], func: a -> b) -> f[b]
+  def map (functor: f[a], func: a → b) → f[b]
 ```
 
 List class:
@@ -72,7 +72,7 @@ class Option[a] is Functor[a]
   None()
   Some(a:a)
   
-  def map (o: Option[a], f: a -> b) -> Option[b] =
+  def map (o: Option[a], f: a → b) → Option[b] =
     o match
       case Some(s) => Some(f(s))
       case None() => None()
