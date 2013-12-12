@@ -5,11 +5,11 @@ type JSObj {
 }
 */
 
-class Functor[f]
-  def map (functor: f[a], func: a -> b) -> f[b]
+feature Functor[f]
+  map(func: a -> b) -> f[b]
 
 
 class Pair[a, b]
   Pair(fst: a, snd: b)
-  def fst (p: Pair[a, b]) -> a = p.fst
-  def snd (p: Pair[a, b]) -> b = p.snd
+  fst(p: Pair[a, b]) -> a = p.fst
+  snd(p: Pair[a, b]) -> b = p.snd

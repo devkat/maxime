@@ -1,4 +1,5 @@
 import maxime.Printable
 
-class Number is Printable
-  def toString (n:Number) = `n.toString()`
+class Num is Printable
+  Num
+  toString() -> String = `n.toString()`

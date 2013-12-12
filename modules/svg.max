@@ -7,7 +7,7 @@ val mm = LengthUnit(25.4)
 
 class Length
   Length(value: Num, unit: LengthUnit)
-  def convert (l: Length, targetUnit: Unit) -> Length =
+  convert(l: Length, targetUnit: Unit) -> Length =
     Length(times(div(l.value, l.unit.pxFactor), targetUnit.pxFactor), targetUnit)
 
 /*
@@ -15,8 +15,8 @@ def matrixToString(m: Matrix) -> Unit =
   sprintf("transform(%d %d %d %d %d %d)", [ m.a, m.b, m.c, m.d, m.e, m.f ])
 */
 
-class Transformable[t]
-  def setMatrix(node: t, m: Matrix) -> Unit
+feature Transformable[t]
+  setMatrix(node: t, m: Matrix) -> Unit
 
 
 /*

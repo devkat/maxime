@@ -1,2 +1,3 @@
 class Printable[n]
-  def toStringDISABLED (n:n) -> String
+  Printable
+  toStringDISABLED (n:n) -> String = ""

@@ -1,13 +1,7 @@
+import maxime.Map
+import maxime.Option
+import maxime.String
+
 class Node
   Node(parent: Option[Node], localName: String, attrs: Map[String, String])
-  
-  def localName (n: Node) -> String = n.localName
-  def parent (n: Node) -> Node = n.parent
-  
-  def attr (n: Node, name: String) -> Option[String] =
-    get(attrs, name)
-
-/*
-def mkNode(j:JSObj) -> Node =
-  Node
-*/
+  attr(name: String) -> Option[String] = attrs.get(name)

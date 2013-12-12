@@ -1,6 +1,6 @@
 class Compiler
-  Compiler()
-  def compile (sourceArray: List[File], target: File, options: Map[String, Any]) → Unit =
+  Compiler
+  compile(sourceArray: List[File], target: File, options: Map[String, Any]) → Unit =
     val sources = array2list(sourceArray)
     println("Compiling " + join(list_map(sources, toString), ", ") + " to " + target)
     

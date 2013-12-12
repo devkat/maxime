@@ -1,8 +1,6 @@
 class Option[a] is Functor[a]
-  None()
-  Some(a:a)
+  None
+  map(f: a -> b) -> Option[b] = None
   
-  def map (o: Option[a], f: a -> b) -> Option[b] =
-    o match
-      case Some(s) => Some(f(s))
-      case None() => None()
+  Some(a:a)
+  map(f: a -> b) -> Option[b] = Some(f(a))

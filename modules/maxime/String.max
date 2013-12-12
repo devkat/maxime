@@ -1,2 +1,3 @@
 class String
-  def println (s:String) = `console.log(s)`
+  String
+  println() -> Void = `console.log(s)`

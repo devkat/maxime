@@ -1,16 +1,17 @@
 class Map[a, b]
-  EmptyMap()
-  Map(m: Map[a, b], key: a, value: b)
 
-  def put(m: Map[a, b], key: a, value: b) -> Map[a, b] =
-    containsKey(m, a) match
-      case True() => replace(m, a, b)
-      case False() => m
+  EmptyMap
+  put(key: a, value: b) -> Map[a, b] = Map(a, b, EmptyMap)
+  get(key: a) -> Option[b] = None
+  
+  Map(key: a, value: b, rest: Map[a, b])
+  
+  put(k: a, v: b) -> Map[a, b] =
+    eq(k, key) match
+      case True => Map(key, v, rest)
+      case False => Map(key, value, rest.put(k, v))
 
-  def get(m: Map[a, b], key: a) -> Option[b] =
-    m match
-      case EmptyMap() => None()
-      case Map(m, k, value) =>
-        eq(k, key) match
-          case True() => value
-          case False() => get(m, key)
+  get(k: a) -> Option[b] =
+    eq(k, key) match
+      case True => value
+      case False => rest.get(key)
