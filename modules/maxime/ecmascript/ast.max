@@ -1,0 +1,2 @@
+class BinaryExpression
+  BinaryExpression(left:Expression, operator:String, right:Expression)

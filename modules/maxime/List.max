@@ -1,4 +1,22 @@
 class List[a] is Functor
+  Nil()
+    map(f: a → b) → List[b] = Nil
+    head() → Option[a] = None
+    tail() → List[a] = Nil
+    concat(l:List[a]) → List[a] = l
+    length() → Num = 0
+    join(sep:String) → String = ""
+
+  Cons(head: a, tail: List[a])
+    map(f: a → b) → List[b] = Cons(f(head), list_map(tail, f))
+    head() → Option[a] = head
+    tail() → List[a] = tail
+    concat(l: List[a]) → List[a] = Cons(head, concat(tail, l2))
+    length() → Num = 1 + tail.length()
+    join(f: a → String, sep:String) → String = f(head) + sep + tail.join(sep)
+
+/*
+class List[a] is Functor
   Cons(head: a, tail: List[a])
   Nil()
   
@@ -26,3 +44,4 @@ class List[a] is Functor
       case Nil() => ""
       case Cons(head, Nil()) => toString(head)
       case Cons(head, tail) => toString(head) + sep + join(tail, sep)
+*/

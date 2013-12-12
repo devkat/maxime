@@ -2,5 +2,42 @@ class Compiler
   Compiler()
   def compile (sourceArray: List[File], target: File, options: Map[String, Any]) → Unit =
     val sources = array2list(sourceArray)
-    println("sources: " + toJson(sources) + ", " + sourceArray)
     println("Compiling " + join(list_map(sources, toString), ", ") + " to " + target)
+    
+    class CompilationUnit
+      CompilationUnit(path:String, maxFiles:List[String], jsFiles:List[String])
+    
+    def mkCompilationUnit(path:String) -> CompilationUnit =
+      CompilationUnit(path, findFiles(path, regexp("\.max$")), findFiles(path, regexp("\.js$")))
+    
+    val compilationUnits = list_map(sources, mkCompilationUnit)
+    println("Compilation units: " + list_map(compilationUnits, println))
+    
+    def compileUnit(unit:CompilationUnit) -> String =
+    
+      class Source
+        Source(code:String, file:String)
+
+      def readSource(file:String) -> Source =
+        Source(readFile(unit.path + "/" + file), file)
+
+      def compileSource(source:Source) -> String =
+        val moduleName = replace(replace(source.file, regexp("\/", "g"), "."), regexp("\.max$"), "")
+        println("Compiling module " + moduleName)
+        val ast = parse(source)
+        generate(ast)
+    
+      def getCode(s:Source) -> String = s.code
+
+      val jsSources = list_map(list_map(unit.jsFiles, readSource), getCode)
+      val maxSources = list_map(unit.maxFiles, readSource)
+      val maxTargets = list_map(maxSources, compileSource)
+      val targets = concat(jsSources, maxTargets)
+      join(targets, "
+")
+    
+    val codes = list_map(compilationUnits, compileUnit)
+    val code = join(codes)
+    val runtimeLib = readFile("runtime/Maxime.js")
+    writeFile(target, prop(options, "before") + runtimeLib + code + prop(options, "after"))
+    code

@@ -1,4 +1,6 @@
-var Maxime = function() {
+var MaximeCtor = function() {
+  
+  this.scope = {};
   
   var
     modules = {},
@@ -29,9 +31,36 @@ var Maxime = function() {
     return module;
   };
   
+  this.declare = function(name, obj) {
+    
+    function addScope(names, parent) {
+      if (names.length === 0) {
+        return parent;
+      }
+      else {
+        var name = names[0];
+        parent[name] = parent[name] || {};
+        return addScope(names.slice(1), parent[name]);
+      }
+    }
+    
+    var chain = name.split(/\./);
+    var scope = addScope(chain.slice(0, chain.length - 1), this.scope);
+    scope[chain[chain.length - 1]] = obj;
+  };
+  
 };
 
+var Maxime = new MaximeCtor();
+
 (function() {
+  
+  function log() {
+    debug = false;
+    if (debug) {
+      console.log.apply(null, arguments);
+    }
+  }
   
   function mergeAssignments(prev, next) {
     var existing = _.pluck(prev, 'name');
@@ -84,7 +113,7 @@ var Maxime = function() {
       clause = clauses[i];
       match = patternMatch(clause.pattern, ref);
       if (match.match) {
-        console.log("Matched pattern ", clause.pattern, 'against', ref.properties(), ' -> ', match.assignments);
+        log("Matched pattern ", clause.pattern, 'against', ref.properties(), ' -> ', match.assignments);
         return clause.callback.apply(null, match.assignments);
       }
     }

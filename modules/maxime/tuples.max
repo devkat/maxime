@@ -1,0 +1,2 @@
+class Pair[a, b]
+  Pair(fst: a, snd: b)

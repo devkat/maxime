@@ -18,22 +18,34 @@ module.exports = function(grunt) {
       build: [ 'build' ]
     },
     compile: {
-      jsCompiler: {
+      js2js: {
         src: [ 'modules' ],
-        target: 'compiler/compiler-js.js',
+        target: 'compiler/compiler-js2js.js',
         compiler: './compile',
+        options: {
+          singleFile: true,
+          before: 'var _ = require("lodash");',
+          after: '/*console.log(Maxime.scope);*/ module.exports = Maxime.scope.maxime.compiler.Compiler.compile;'
+        }
+      },
+      js2max: {
+        src: [ 'modules' ],
+        target: 'compiler/compiler-js2max.js',
+        compiler: '../compiler/compiler-js2js.js',
         options: {
           singleFile: true,
           before: 'var _ = require("lodash");',
           after: 'module.exports = compile;'
         }
       },
-      maxCompiler: {
+      max2max: {
         src: [ 'modules' ],
-        target: 'compiler/compiler-maxime.js',
-        compiler: '../compiler/compiler-js.js',
+        target: 'compiler/compiler-max2max.js',
+        compiler: '../compiler/compiler-js2max.js',
         options: {
-          singleFile: true
+          singleFile: true,
+          before: 'var _ = require("lodash");',
+          after: 'module.exports = compile;'
         }
       }
     }
@@ -48,8 +60,9 @@ module.exports = function(grunt) {
   grunt.registerTask('default', [
     //'jison',
     'clean:compiler',
-    'compile:jsCompiler',
-    'compile:maxCompiler'
+    'compile:js2js',
+    'compile:js2max',
+    'compile:max2max'
     //'vows'
   ]);
 
