@@ -10,6 +10,6 @@ feature Functor[f]
 
 
 class Pair[a, b]
-  Pair(fst: a, snd: b)
-  fst(p: Pair[a, b]) -> a = p.fst
-  snd(p: Pair[a, b]) -> b = p.snd
+  Pair(first: a, second: b)
+  fst() -> a = first
+  snd() -> b = second

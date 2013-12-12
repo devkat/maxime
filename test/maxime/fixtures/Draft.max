@@ -1,0 +1,38 @@
+class Point
+  Point(x:Num, y:Num)
+
+  swap() -> Point = Point(y, x)
+  neg() -> Point = multiply(-1)
+  +(p:Point) -> Point = Point(x + p.x, y + p.y)
+  -(p:Point) -> Point = add(p.neg())
+  /(t:Number) -> Point = multiply(1/t)
+  length() -> Number = sqrt(x*x + y*y)
+  mapCoords(f: Number -> Number) -> Point = Point(f(x), f(y))
+
+class ImageType
+  Vector
+  Raster
+
+
+class ImageInfo
+  ImageInfo(dim:Point, type:ImageType)
+
+
+def imageFit =
+
+  def calcBounds(image:Image, fitTo:Rect) -> Rect =
+    image.type match
+      case Vector => fitTo
+      case Raster =>
+        val ratio = [ fitTo.width / image.dim.x, fitTo.height / image.dim.height ]
+        val scaleFactor = ratio.max()
+        val targetDim = image.type match
+          case Vector => image.dim.mapCoords(\t -> scaleFactor * t)
+          case Raster =>
+            val optDim = imageQuality.getOptimalDim(svg, image.dim)
+            val optFactor = optDim.x / image.dim.x
+            dim * Math.min(optFactor, scaleFactor)
+        val pos = fitTo.pos().add((fitTo.dim() - targetDim).mapCoords(\t -> t / 2))
+        geom.rect
+  
+  

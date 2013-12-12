@@ -7,13 +7,13 @@ class List[a] is Functor
   length() → Num = 0
   join(sep:String) → String = ""
 
-  Cons(head: a, tail: List[a])
-  map(f: a → b) → List[b] = Cons(f(head), list_map(tail, f))
-  head() → Option[a] = head
-  tail() → List[a] = tail
-  concat(l: List[a]) → List[a] = Cons(head, concat(tail, l2))
-  length() → Num = 1 + tail.length()
-  join(f: a → String, sep:String) → String = f(head) + sep + tail.join(sep)
+  Cons(headElem: a, tailList: List[a])
+  map(f: a → b) → List[b] = Cons(f(headElem), map(tailList, f))
+  head() → Option[a] = headElem
+  tail() → List[a] = tailList
+  concat(l: List[a]) → List[a] = Cons(headElem, concat(tailList, l2))
+  length() → Num = 1 + tailList.length()
+  join(f: a → String, sep:String) → String = f(headElem) + sep + tailList.join(sep)
 
 /*
 class List[a] is Functor
