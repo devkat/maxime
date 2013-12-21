@@ -1,8 +1,13 @@
+import maxime.List
+import maxime.Map
+import maxime.io.File
+
 class Compiler
   Compiler
-  compile(sourceArray: List[File], target: File, options: Map[String, Any]) → Unit =
-    val sources = array2list(sourceArray)
-    println("Compiling " + join(list_map(sources, toString), ", ") + " to " + target)
+  compile(sources: List[File], target: File, options: Map[String, Any]) → Unit =
+    def toString(s:Printable) -> String = s.toString()
+    
+    ("Compiling " + sources.map(toString).join(", ") + " to " + target).println()
     
     class CompilationUnit
       CompilationUnit(path:String, maxFiles:List[String], jsFiles:List[String])
@@ -10,8 +15,8 @@ class Compiler
     def mkCompilationUnit(path:String) -> CompilationUnit =
       CompilationUnit(path, findFiles(path, regexp("\.max$")), findFiles(path, regexp("\.js$")))
     
-    val compilationUnits = list_map(sources, mkCompilationUnit)
-    println("Compilation units: " + list_map(compilationUnits, println))
+    val compilationUnits = sources.map(mkCompilationUnit)
+    ("Compilation units: " + compilationUnits.map(toString)).println()
     
     def compileUnit(unit:CompilationUnit) -> String =
     
@@ -21,23 +26,25 @@ class Compiler
       def readSource(file:String) -> Source =
         Source(readFile(unit.path + "/" + file), file)
 
+      def parse(source:Source) -> Source = source
+      def generate(source:Source) -> Source = source
+
       def compileSource(source:Source) -> String =
-        val moduleName = replace(replace(source.file, regexp("\/", "g"), "."), regexp("\.max$"), "")
-        println("Compiling module " + moduleName)
+        val moduleName = source.file.replace("\/g", ".").replace("\.max$g", "")
+        ("Compiling module " + moduleName).println()
         val ast = parse(source)
         generate(ast)
     
       def getCode(s:Source) -> String = s.code
 
-      val jsSources = list_map(list_map(unit.jsFiles, readSource), getCode)
-      val maxSources = list_map(unit.maxFiles, readSource)
-      val maxTargets = list_map(maxSources, compileSource)
-      val targets = concat(jsSources, maxTargets)
-      join(targets, "
+      val jsSources = unit.jsFiles.map(readSource).map(getCode)
+      val maxSources = unit.maxFiles.map(readSource)
+      val maxTargets = maxSources.map(compileSource)
+      (jsSources ++ maxTargets).join("
 ")
     
-    val codes = list_map(compilationUnits, compileUnit)
-    val code = join(codes)
+    val codes = compilationUnits.map(compileUnit)
+    val code = codes.join("\n")
     val runtimeLib = readFile("runtime/Maxime.js")
     writeFile(target, prop(options, "before") + runtimeLib + code + prop(options, "after"))
     code

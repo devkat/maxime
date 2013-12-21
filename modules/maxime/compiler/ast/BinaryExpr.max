@@ -1,3 +1,5 @@
+import maxime.String
+
 class BinaryExpr
   BinaryExpr(left:Expr, operator:Operator, right:Expr)
   

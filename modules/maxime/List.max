@@ -1,9 +1,12 @@
+import maxime.Option
+import maxime.Num
+
 class List[a] is Functor
   Nil
-  map(f: a → b) → List[b] = Nil
+  map[b](f: a → b) → List[b] = Nil
   head() → Option[a] = None
   tail() → List[a] = Nil
-  concat(l:List[a]) → List[a] = l
+  ++(l:List[a]) → List[a] = l
   length() → Num = 0
   join(sep:String) → String = ""
 
@@ -11,7 +14,7 @@ class List[a] is Functor
   map(f: a → b) → List[b] = Cons(f(headElem), map(tailList, f))
   head() → Option[a] = headElem
   tail() → List[a] = tailList
-  concat(l: List[a]) → List[a] = Cons(headElem, concat(tailList, l2))
+  ++(l: List[a]) → List[a] = Cons(headElem, concat(tailList, l2))
   length() → Num = 1 + tailList.length()
   join(f: a → String, sep:String) → String = f(headElem) + sep + tailList.join(sep)
 

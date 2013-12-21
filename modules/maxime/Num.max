@@ -3,3 +3,4 @@ import maxime.Printable
 class Num is Printable
   Num
   toString() -> String = `n.toString()`
+  +(n:Num) -> Num = 0
