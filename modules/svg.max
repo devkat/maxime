@@ -1,14 +1,17 @@
+import geom
+
 class LengthUnit
   LengthUnit(pxFactor: Num)
 
+/*
 val px = LengthUnit(1)
 val mm = LengthUnit(25.4)
-
+*/
 
 class Length
   Length(value: Num, unit: LengthUnit)
-  convert(l: Length, targetUnit: Unit) -> Length =
-    Length(times(div(l.value, l.unit.pxFactor), targetUnit.pxFactor), targetUnit)
+  convert(l: Length, targetUnit: LengthUnit) -> Length =
+    Length(l.value / l.unit.pxFactor * targetUnit.pxFactor, targetUnit)
 
 /*
 def matrixToString(m: Matrix) -> Unit =

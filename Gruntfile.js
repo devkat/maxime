@@ -25,7 +25,7 @@ module.exports = function(grunt) {
         options: {
           singleFile: true,
           before: 'var _ = require("lodash");',
-          after: '/*console.log(Maxime.scope);*/ module.exports = Maxime.scope.maxime.compiler.Compiler.compile;'
+          after: '/*console.log(Maxime.scope);*/ module.exports = Maxime.scope["maxime.compiler.Compiler"].compile;'
         }
       },
       js2max: {

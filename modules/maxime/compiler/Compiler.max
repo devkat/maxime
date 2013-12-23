@@ -1,10 +1,11 @@
 import maxime.List
 import maxime.Map
 import maxime.io.File
+import maxime.RegExp
 
 class Compiler
   Compiler
-  compile(sources: List[File], target: File, options: Map[String, Any]) → Unit =
+  compile(sources: List[File], target: File, options: Map[String, Any]) → Void =
     def toString(s:Printable) -> String = s.toString()
     
     ("Compiling " + sources.map(toString).join(", ") + " to " + target).println()
@@ -13,7 +14,7 @@ class Compiler
       CompilationUnit(path:String, maxFiles:List[String], jsFiles:List[String])
     
     def mkCompilationUnit(path:String) -> CompilationUnit =
-      CompilationUnit(path, findFiles(path, regexp("\.max$")), findFiles(path, regexp("\.js$")))
+      CompilationUnit(path, findFiles(path, RegExp("\.max$", "")), findFiles(path, RegExp("\.js$", "")))
     
     val compilationUnits = sources.map(mkCompilationUnit)
     ("Compilation units: " + compilationUnits.map(toString)).println()
@@ -24,7 +25,7 @@ class Compiler
         Source(code:String, file:String)
 
       def readSource(file:String) -> Source =
-        Source(readFile(unit.path + "/" + file), file)
+        Source(File(unit.path + "/" + file).read(), file)
 
       def parse(source:Source) -> Source = source
       def generate(source:Source) -> Source = source
@@ -45,6 +46,8 @@ class Compiler
     
     val codes = compilationUnits.map(compileUnit)
     val code = codes.join("\n")
-    val runtimeLib = readFile("runtime/Maxime.js")
-    writeFile(target, prop(options, "before") + runtimeLib + code + prop(options, "after"))
+    //val runtimeLib = readFile("runtime/Maxime.js")
+    //writeFile(target, prop(options, "before") + runtimeLib + code + prop(options, "after"))
     code
+
+def compile(sources: List[File], target: File, options: Map[String, Any]) -> Void = Compiler.compile(sources, target, options)

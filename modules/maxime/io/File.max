@@ -1,2 +1,11 @@
+import maxime.RegExp
+import maxime.List
+
+class Path
+  Path
+
 class File
   File
+  read() → String = ""
+
+def findFiles(p:Path, r:RegExp) → List[File] = Nil

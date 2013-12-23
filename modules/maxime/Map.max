@@ -3,7 +3,7 @@ import maxime.Option
 class Map[a, b]
 
   EmptyMap
-  put(key: a, value: b) -> Map[a, b] = Map(a, b, EmptyMap)
+  put(key: a, value: b) -> Map[a, b] = Map(key, value, EmptyMap)
   get(key: a) -> Option[b] = None
   
   Map(key: a, value: b, rest: Map[a, b])

@@ -2,5 +2,12 @@ import maxime.Printable
 
 class Num is Printable
   Num
-  toString() -> String = `n.toString()`
-  +(n:Num) -> Num = 0
+  toString() → String = `n.toString()`
+  +(n:Num) → Num = 0
+  -(n:Num) → Num = 0
+  *(n:Num) → Num = 0
+  /(n:Num) → Num = 0
+
+def min(x:Num, y:Num) → Num = x
+
+def abs(x:Num) → Num = x

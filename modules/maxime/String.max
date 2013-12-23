@@ -1,7 +1,7 @@
 import maxime.Void
 
 class String
-  String
+  String(s:Void)
   +(s:String) -> String = ""
-  println() -> Void = `console.log(s)`
+  println() -> Void = `console.log(this.s)`
   replace(regex:String, replacement:String) -> String = ""

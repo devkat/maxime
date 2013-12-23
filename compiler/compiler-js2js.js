@@ -196,748 +196,622 @@ function prop(obj, name) {
   return obj[name];
 }
 
-(function () {
-  Maxime.declare('dom.Node', function (parent, localName, attrs) {
-    this.constructor = function () {
-      return 'Node';
-    };
-    this.properties = function () {
-      return [
-        parent,
-        localName,
-        attrs
-      ];
-    };
-    this.parent = function () {
-      return parent;
-    };
-    this.localName = function () {
-      return localName;
-    };
-    this.attrs = function () {
-      return attrs;
-    };
-  });
-  function localName(n) {
-    return n.localName();
+Maxime.scope['dom'] = {
+  Node: {
+    Node: function () {
+      var Node = function (parent, localName, attrs) {
+        this.constructor = 'Node';
+        this.properties = [
+          parent,
+          localName,
+          attrs
+        ];
+        this.parent = parent;
+        this.localName = localName;
+        this.attrs = attrs;
+      };
+      Node.prototype.attr = function (name) {
+        return attrs.get(name);
+      };
+      return Node;
+    }()
   }
-  function parent(n) {
-    return n.parent();
+};
+Maxime.scope['geom'] = {
+  Point: {
+    Point: function () {
+      var Point = function (x, y) {
+        this.constructor = 'Point';
+        this.properties = [
+          x,
+          y
+        ];
+        this.x = x;
+        this.y = y;
+      };
+      Point.prototype.swap = function () {
+        return new Maxime.scope['geom']['Point']['Point'](y, x);
+      };
+      Point.prototype.bounds = function () {
+        return new Maxime.scope['geom']['Rect']['Rect'](x, y, 0, 0);
+      };
+      return Point;
+    }()
+  },
+  Line: {
+    Line: function () {
+      var Line = function (x1, y1, x2, y2) {
+        this.constructor = 'Line';
+        this.properties = [
+          x1,
+          y1,
+          x2,
+          y2
+        ];
+        this.x1 = x1;
+        this.y1 = y1;
+        this.x2 = x2;
+        this.y2 = y2;
+      };
+      Line.prototype.bounds = function () {
+        return new Maxime.scope['geom']['Rect']['Rect'](min(x1, x2), min(y1, y2), abs(x2._minus_(x1)), abs(y2._minus_(y1)));
+      };
+      return Line;
+    }()
+  },
+  Rect: {
+    Rect: function () {
+      var Rect = function (x, y, width, height) {
+        this.constructor = 'Rect';
+        this.properties = [
+          x,
+          y,
+          width,
+          height
+        ];
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+      };
+      Rect.prototype.bounds = function () {
+        return new Maxime.scope['geom']['Rect']['Rect'](0, 0, width, height);
+      };
+      return Rect;
+    }()
+  },
+  Matrix: {
+    Matrix: function () {
+      var Matrix = function (a, b, c, d, e, f) {
+        this.constructor = 'Matrix';
+        this.properties = [
+          a,
+          b,
+          c,
+          d,
+          e,
+          f
+        ];
+        this.a = a;
+        this.b = b;
+        this.c = c;
+        this.d = d;
+        this.e = e;
+        this.f = f;
+      };
+      return Matrix;
+    }()
   }
-  function attr(n, name) {
-    return get(attrs, name);
+};
+Maxime.scope['maxime.Bool'] = {
+  Bool: {
+    True: function () {
+      var True = function () {
+        this.constructor = 'True';
+        this.properties = [];
+      };
+      True.prototype.not = function () {
+        return new Maxime.scope['maxime.Bool']['Bool']['False']();
+      };
+      return True;
+    }(),
+    False: function () {
+      var False = function () {
+        this.constructor = 'False';
+        this.properties = [];
+      };
+      False.prototype.not = function () {
+        return new Maxime.scope['maxime.Bool']['Bool']['True']();
+      };
+      return False;
+    }()
   }
-}());
-(function () {
-  function bounds(shape) {
+};
+Maxime.scope['maxime.compiler.ast.BinaryExpr'] = {
+  BinaryExpr: {
+    BinaryExpr: function () {
+      var BinaryExpr = function (left, operator, right) {
+        this.constructor = 'BinaryExpr';
+        this.properties = [
+          left,
+          operator,
+          right
+        ];
+        this.left = left;
+        this.operator = operator;
+        this.right = right;
+      };
+      BinaryExpr.prototype.transcode = function () {
+        return new Maxime.scope['maxime.String']['String']['String']('');
+      };
+      return BinaryExpr;
+    }()
   }
-  Maxime.declare('geom.Point', function (x, y) {
-    this.constructor = function () {
-      return 'Point';
-    };
-    this.properties = function () {
-      return [
-        x,
-        y
-      ];
-    };
-    this.x = function () {
-      return x;
-    };
-    this.y = function () {
-      return y;
-    };
-  });
-  function swap(p) {
-    return new (Maxime.get([object Object]))(p.y(), p.x());
-  }
-  Maxime.declare('geom.Line', function (x1, y1, x2, y2) {
-    this.constructor = function () {
-      return 'Line';
-    };
-    this.properties = function () {
-      return [
-        x1,
-        y1,
-        x2,
-        y2
-      ];
-    };
-    this.x1 = function () {
-      return x1;
-    };
-    this.y1 = function () {
-      return y1;
-    };
-    this.x2 = function () {
-      return x2;
-    };
-    this.y2 = function () {
-      return y2;
-    };
-  });
-  function bounds(l) {
-    return new (Maxime.get([object Object]))(min(l.x1(), l.x2()), min(l.y1(), l.y2()), abs(minus(l.x2(), l.x1())), abs(minus(l.y2(), l.y1())));
-  }
-  Maxime.declare('geom.Rect', function (x, y, w, h) {
-    this.constructor = function () {
-      return 'Rect';
-    };
-    this.properties = function () {
-      return [
-        x,
-        y,
-        w,
-        h
-      ];
-    };
-    this.x = function () {
-      return x;
-    };
-    this.y = function () {
-      return y;
-    };
-    this.w = function () {
-      return w;
-    };
-    this.h = function () {
-      return h;
-    };
-  });
-  function bounds(r) {
-    return new (Maxime.get([object Object]))(0, 0, r.w(), r.h());
-  }
-}());
-(function () {
-  Maxime.declare('maxime,Bool.True', function () {
-    this.constructor = function () {
-      return 'True';
-    };
-    this.properties = function () {
-      return [];
-    };
-  });
-  Maxime.declare('maxime,Bool.False', function () {
-    this.constructor = function () {
-      return 'False';
-    };
-    this.properties = function () {
-      return [];
-    };
-  });
-  function not(b) {
-    return Maxime.patternMatch([
-      {
-        pattern: {
-          'type': 'constructor',
-          'name': 'True',
-          'params': []
-        },
-        callback: function () {
-          return new (Maxime.get([object Object]))();
-        }
-      },
-      {
-        pattern: {
-          'type': 'constructor',
-          'name': 'False',
-          'params': []
-        },
-        callback: function () {
-          return new (Maxime.get([object Object]))();
-        }
-      }
-    ], b);
-  }
-}());
-(function () {
-  Maxime.declare('maxime,compiler,ast,BinaryExpr.BinaryExpr', function (left, operator, right) {
-    this.constructor = function () {
-      return 'BinaryExpr';
-    };
-    this.properties = function () {
-      return [
-        left,
-        operator,
-        right
-      ];
-    };
-    this.left = function () {
-      return left;
-    };
-    this.operator = function () {
-      return operator;
-    };
-    this.right = function () {
-      return right;
-    };
-  });
-  function transcode() {
-    return '';
-  }
-}());
-(function () {
-  Maxime.declare('maxime,compiler,Compiler.Compiler', function () {
-    this.constructor = function () {
-      return 'Compiler';
-    };
-    this.properties = function () {
-      return [];
-    };
-  });
-  function compile(sourceArray, target, options) {
-    return function () {
-      var sources = array2list(sourceArray);
-      println('Compiling ' + join(list_map(sources, toString), ', ') + ' to ' + target);
-      Maxime.declare('undefined.CompilationUnit', function (path, maxFiles, jsFiles) {
-        this.constructor = function () {
-          return 'CompilationUnit';
-        };
-        this.properties = function () {
-          return [
-            path,
-            maxFiles,
-            jsFiles
-          ];
-        };
-        this.path = function () {
-          return path;
-        };
-        this.maxFiles = function () {
-          return maxFiles;
-        };
-        this.jsFiles = function () {
-          return jsFiles;
-        };
-      });
-      function mkCompilationUnit(path) {
-        return new (Maxime.get([object Object]))(path, findFiles(path, regexp('\\.max$')), findFiles(path, regexp('\\.js$')));
-      }
-      var compilationUnits = list_map(sources, mkCompilationUnit);
-      println('Compilation units: ' + list_map(compilationUnits, println));
-      function compileUnit(unit) {
+};
+Maxime.scope['maxime.compiler.Compiler'] = {
+  Compiler: {
+    Compiler: function () {
+      var Compiler = function () {
+        this.constructor = 'Compiler';
+        this.properties = [];
+      };
+      Compiler.prototype.compile = function (sources, target, options) {
         return function () {
-          Maxime.declare('undefined.Source', function (code, file) {
-            this.constructor = function () {
-              return 'Source';
-            };
-            this.properties = function () {
-              return [
-                code,
-                file
-              ];
-            };
-            this.code = function () {
-              return code;
-            };
-            this.file = function () {
-              return file;
-            };
-          });
-          function readSource(file) {
-            return new (Maxime.get([object Object]))(readFile(unit.path() + '/' + file), file);
+          function toString(s) {
+            return s.toString();
           }
-          function compileSource(source) {
+          new Maxime.scope['maxime.String']['String']['String']('Compiling ')._plus_(sources.map(toString).join(new Maxime.scope['maxime.String']['String']['String'](', ')))._plus_(new Maxime.scope['maxime.String']['String']['String'](' to '))._plus_(target).println();
+          var CompilationUnit = {
+              CompilationUnit: function () {
+                var CompilationUnit = function (path, maxFiles, jsFiles) {
+                  this.constructor = 'CompilationUnit';
+                  this.properties = [
+                    path,
+                    maxFiles,
+                    jsFiles
+                  ];
+                  this.path = path;
+                  this.maxFiles = maxFiles;
+                  this.jsFiles = jsFiles;
+                };
+                return CompilationUnit;
+              }()
+            };
+          function mkCompilationUnit(path) {
+            return new Maxime.scope['maxime.compiler.Compiler']['Compiler']['Compiler']['compile']['CompilationUnit']['CompilationUnit'](path, findFiles(path, new Maxime.scope['maxime.RegExp']['RegExp']['RegExp'](new Maxime.scope['maxime.String']['String']['String']('\\.max$'), new Maxime.scope['maxime.String']['String']['String'](''))), findFiles(path, new Maxime.scope['maxime.RegExp']['RegExp']['RegExp'](new Maxime.scope['maxime.String']['String']['String']('\\.js$'), new Maxime.scope['maxime.String']['String']['String'](''))));
+          }
+          var compilationUnits = sources.map(mkCompilationUnit);
+          new Maxime.scope['maxime.String']['String']['String']('Compilation units: ')._plus_(compilationUnits.map(toString)).println();
+          function compileUnit(unit) {
             return function () {
-              var moduleName = replace(replace(source.file(), regexp('\\/', 'g'), '.'), regexp('\\.max$'), '');
-              println('Compiling module ' + moduleName);
-              var ast = parse(source);
-              return generate(ast);
+              var Source = {
+                  Source: function () {
+                    var Source = function (code, file) {
+                      this.constructor = 'Source';
+                      this.properties = [
+                        code,
+                        file
+                      ];
+                      this.code = code;
+                      this.file = file;
+                    };
+                    return Source;
+                  }()
+                };
+              function readSource(file) {
+                return new Maxime.scope['maxime.compiler.Compiler']['Compiler']['Compiler']['compile']['compileUnit']['Source']['Source'](new Maxime.scope['maxime.io.File']['File']['File'](unit.path()._plus_(new Maxime.scope['maxime.String']['String']['String']('/'))._plus_(file)).read(), file);
+              }
+              function parse(source) {
+                return source;
+              }
+              function generate(source) {
+                return source;
+              }
+              function compileSource(source) {
+                return function () {
+                  var moduleName = source.file().replace(new Maxime.scope['maxime.String']['String']['String']('\\/g'), new Maxime.scope['maxime.String']['String']['String']('.')).replace(new Maxime.scope['maxime.String']['String']['String']('\\.max$g'), new Maxime.scope['maxime.String']['String']['String'](''));
+                  new Maxime.scope['maxime.String']['String']['String']('Compiling module ')._plus_(moduleName).println();
+                  var ast = parse(source);
+                  return generate(ast);
+                }();
+              }
+              function getCode(s) {
+                return s.code();
+              }
+              var jsSources = unit.jsFiles().map(readSource).map(getCode);
+              var maxSources = unit.maxFiles().map(readSource);
+              var maxTargets = maxSources.map(compileSource);
+              return jsSources._plus__plus_(maxTargets).join(new Maxime.scope['maxime.String']['String']['String']('\n'));
             }();
           }
-          function getCode(s) {
-            return s.code();
-          }
-          var jsSources = list_map(list_map(unit.jsFiles(), readSource), getCode);
-          var maxSources = list_map(unit.maxFiles(), readSource);
-          var maxTargets = list_map(maxSources, compileSource);
-          var targets = concat(jsSources, maxTargets);
-          return join(targets, '\n');
+          var codes = compilationUnits.map(compileUnit);
+          var code = codes.join(new Maxime.scope['maxime.String']['String']['String']('\\n'));
+          return code;
         }();
-      }
-      var codes = list_map(compilationUnits, compileUnit);
-      var code = join(codes);
-      var runtimeLib = readFile('runtime/Maxime.js');
-      writeFile(target, prop(options, 'before') + runtimeLib + code + prop(options, 'after'));
-      return code;
-    }();
+      };
+      return Compiler;
+    }()
+  },
+  compile: function (sources, target, options) {
+    return new Maxime.scope['maxime.compiler.Compiler']['Compiler']['Compiler']().compile(sources, target, options);
   }
-}());
-(function () {
-  Maxime.declare('maxime,ecmascript,ast.BinaryExpression', function (left, operator, right) {
-    this.constructor = function () {
-      return 'BinaryExpression';
-    };
-    this.properties = function () {
-      return [
-        left,
-        operator,
-        right
-      ];
-    };
-    this.left = function () {
-      return left;
-    };
-    this.operator = function () {
-      return operator;
-    };
-    this.right = function () {
-      return right;
-    };
-  });
-}());
-(function () {
-  Maxime.declare('maxime,List.Cons', function (head, tail) {
-    this.constructor = function () {
-      return 'Cons';
-    };
-    this.properties = function () {
-      return [
-        head,
-        tail
-      ];
-    };
-    this.head = function () {
-      return head;
-    };
-    this.tail = function () {
-      return tail;
-    };
-  });
-  Maxime.declare('maxime,List.Nil', function () {
-    this.constructor = function () {
-      return 'Nil';
-    };
-    this.properties = function () {
-      return [];
-    };
-  });
-  function list_map(list, f) {
-    return Maxime.patternMatch([
-      {
-        pattern: {
-          'type': 'constructor',
-          'name': 'Cons',
-          'params': [
-            {
-              'type': 'variable',
-              'name': 'head'
-            },
-            {
-              'type': 'variable',
-              'name': 'tail'
-            }
-          ]
-        },
-        callback: function (head, tail) {
-          return new (Maxime.get([object Object]))(f(head), list_map(tail, f));
-        }
-      },
-      {
-        pattern: {
-          'type': 'constructor',
-          'name': 'Nil',
-          'params': []
-        },
-        callback: function () {
-          return new (Maxime.get([object Object]))();
-        }
-      }
-    ], list);
+};
+Maxime.scope['maxime.ecmascript.ast'] = {
+  BinaryExpression: {
+    BinaryExpression: function () {
+      var BinaryExpression = function (left, operator, right) {
+        this.constructor = 'BinaryExpression';
+        this.properties = [
+          left,
+          operator,
+          right
+        ];
+        this.left = left;
+        this.operator = operator;
+        this.right = right;
+      };
+      return BinaryExpression;
+    }()
   }
-  function head(list) {
-    return list.head();
+};
+Maxime.scope['maxime.io.File'] = {
+  Path: {
+    Path: function () {
+      var Path = function () {
+        this.constructor = 'Path';
+        this.properties = [];
+      };
+      return Path;
+    }()
+  },
+  File: {
+    File: function () {
+      var File = function () {
+        this.constructor = 'File';
+        this.properties = [];
+      };
+      File.prototype.read = function () {
+        return new Maxime.scope['maxime.String']['String']['String']('');
+      };
+      return File;
+    }()
+  },
+  findFiles: function (p, r) {
+    return new Maxime.scope['maxime.List']['List']['Nil']();
   }
-  function tail(list) {
-    return list.tail();
+};
+Maxime.scope['maxime.List'] = {
+  List: {
+    Nil: function () {
+      var Nil = function () {
+        this.constructor = 'Nil';
+        this.properties = [];
+      };
+      Nil.prototype.map = function (f) {
+        return new Maxime.scope['maxime.List']['List']['Nil']();
+      };
+      Nil.prototype.head = function () {
+        return new Maxime.scope['maxime.Option']['Option']['None']();
+      };
+      Nil.prototype.tail = function () {
+        return new Maxime.scope['maxime.List']['List']['Nil']();
+      };
+      Nil.prototype._plus__plus_ = function (l) {
+        return l;
+      };
+      Nil.prototype.length = function () {
+        return 0;
+      };
+      Nil.prototype.join = function (sep) {
+        return new Maxime.scope['maxime.String']['String']['String']('');
+      };
+      return Nil;
+    }(),
+    Cons: function () {
+      var Cons = function (headElem, tailList) {
+        this.constructor = 'Cons';
+        this.properties = [
+          headElem,
+          tailList
+        ];
+        this.headElem = headElem;
+        this.tailList = tailList;
+      };
+      Cons.prototype.map = function (f) {
+        return new Maxime.scope['maxime.List']['List']['Cons'](f(headElem), map(tailList, f));
+      };
+      Cons.prototype.head = function () {
+        return headElem;
+      };
+      Cons.prototype.tail = function () {
+        return tailList;
+      };
+      Cons.prototype._plus__plus_ = function (l) {
+        return new Maxime.scope['maxime.List']['List']['Cons'](headElem, tailList._plus__plus_(l));
+      };
+      Cons.prototype.length = function () {
+        return 1.._plus_(tailList.length());
+      };
+      Cons.prototype.join = function (f, sep) {
+        return f(headElem)._plus_(sep)._plus_(tailList.join(sep));
+      };
+      return Cons;
+    }()
   }
-  function concat(l1, l2) {
-    return Maxime.patternMatch([
-      {
-        pattern: {
-          'type': 'constructor',
-          'name': 'Nil',
-          'params': []
-        },
-        callback: function () {
-          return l2;
-        }
-      },
-      {
-        pattern: {
-          'type': 'constructor',
-          'name': 'Cons',
-          'params': [
-            {
-              'type': 'variable',
-              'name': 'head'
-            },
-            {
-              'type': 'variable',
-              'name': 'tail'
-            }
-          ]
-        },
-        callback: function (head, tail) {
-          return new (Maxime.get([object Object]))(head, concat(tail, l2));
-        }
-      }
-    ], l1);
-  }
-  function length(l) {
-    return Maxime.patternMatch([
-      {
-        pattern: {
-          'type': 'constructor',
-          'name': 'Nil',
-          'params': []
-        },
-        callback: function () {
-          return 0;
-        }
-      },
-      {
-        pattern: {
-          'type': 'constructor',
-          'name': 'Cons',
-          'params': [
-            {
-              'type': 'variable',
-              'name': 'head'
-            },
-            {
-              'type': 'variable',
-              'name': 'tail'
-            }
-          ]
-        },
-        callback: function (head, tail) {
-          return 1 + length(tail);
-        }
-      }
-    ], l);
-  }
-  function join(l, sep) {
-    return Maxime.patternMatch([
-      {
-        pattern: {
-          'type': 'constructor',
-          'name': 'Nil',
-          'params': []
-        },
-        callback: function () {
-          return '';
-        }
-      },
-      {
-        pattern: {
-          'type': 'constructor',
-          'name': 'Cons',
-          'params': [
-            {
-              'type': 'variable',
-              'name': 'head'
-            },
-            {
+};
+Maxime.scope['maxime.Map'] = {
+  Map: {
+    EmptyMap: function () {
+      var EmptyMap = function () {
+        this.constructor = 'EmptyMap';
+        this.properties = [];
+      };
+      EmptyMap.prototype.put = function (key, value) {
+        return new Maxime.scope['maxime.Map']['Map']['Map'](key, value, new Maxime.scope['maxime.Map']['Map']['EmptyMap']());
+      };
+      EmptyMap.prototype.get = function (key) {
+        return new Maxime.scope['maxime.Option']['Option']['None']();
+      };
+      return EmptyMap;
+    }(),
+    Map: function () {
+      var Map = function (key, value, rest) {
+        this.constructor = 'Map';
+        this.properties = [
+          key,
+          value,
+          rest
+        ];
+        this.key = key;
+        this.value = value;
+        this.rest = rest;
+      };
+      Map.prototype.put = function (k, v) {
+        return Maxime.patternMatch([
+          {
+            pattern: {
               'type': 'constructor',
-              'name': 'Nil',
+              'name': 'True',
               'params': []
-            }
-          ]
-        },
-        callback: function (head) {
-          return toString(head);
-        }
-      },
-      {
-        pattern: {
-          'type': 'constructor',
-          'name': 'Cons',
-          'params': [
-            {
-              'type': 'variable',
-              'name': 'head'
             },
-            {
-              'type': 'variable',
-              'name': 'tail'
+            callback: function () {
+              return new Maxime.scope['maxime.Map']['Map']['Map'](key, v, rest);
             }
-          ]
-        },
-        callback: function (head, tail) {
-          return toString(head) + sep + join(tail, sep);
-        }
-      }
-    ], l);
-  }
-}());
-(function () {
-  Maxime.declare('maxime,Map.EmptyMap', function () {
-    this.constructor = function () {
-      return 'EmptyMap';
-    };
-    this.properties = function () {
-      return [];
-    };
-  });
-  Maxime.declare('maxime,Map.Map', function (m, key, value) {
-    this.constructor = function () {
-      return 'Map';
-    };
-    this.properties = function () {
-      return [
-        m,
-        key,
-        value
-      ];
-    };
-    this.m = function () {
-      return m;
-    };
-    this.key = function () {
-      return key;
-    };
-    this.value = function () {
-      return value;
-    };
-  });
-  function put(m, key, value) {
-    return Maxime.patternMatch([
-      {
-        pattern: {
-          'type': 'constructor',
-          'name': 'True',
-          'params': []
-        },
-        callback: function () {
-          return replace(m, a, b);
-        }
-      },
-      {
-        pattern: {
-          'type': 'constructor',
-          'name': 'False',
-          'params': []
-        },
-        callback: function () {
-          return m;
-        }
-      }
-    ], containsKey(m, a));
-  }
-  function get(m, key) {
-    return Maxime.patternMatch([
-      {
-        pattern: {
-          'type': 'constructor',
-          'name': 'EmptyMap',
-          'params': []
-        },
-        callback: function () {
-          return new (Maxime.get([object Object]))();
-        }
-      },
-      {
-        pattern: {
-          'type': 'constructor',
-          'name': 'Map',
-          'params': [
-            {
-              'type': 'variable',
-              'name': 'm'
+          },
+          {
+            pattern: {
+              'type': 'constructor',
+              'name': 'False',
+              'params': []
             },
-            {
-              'type': 'variable',
-              'name': 'k'
-            },
-            {
-              'type': 'variable',
-              'name': 'value'
+            callback: function () {
+              return new Maxime.scope['maxime.Map']['Map']['Map'](key, value, rest.put(k, v));
             }
-          ]
-        },
-        callback: function (m, k, value) {
-          return Maxime.patternMatch([
-            {
-              pattern: {
-                'type': 'constructor',
-                'name': 'True',
-                'params': []
-              },
-              callback: function () {
-                return value;
-              }
+          }
+        ], eq(k, key));
+      };
+      Map.prototype.get = function (k) {
+        return Maxime.patternMatch([
+          {
+            pattern: {
+              'type': 'constructor',
+              'name': 'True',
+              'params': []
             },
-            {
-              pattern: {
-                'type': 'constructor',
-                'name': 'False',
-                'params': []
-              },
-              callback: function () {
-                return get(m, key);
-              }
+            callback: function () {
+              return value;
             }
-          ], eq(k, key));
-        }
-      }
-    ], m);
+          },
+          {
+            pattern: {
+              'type': 'constructor',
+              'name': 'False',
+              'params': []
+            },
+            callback: function () {
+              return rest.get(key);
+            }
+          }
+        ], eq(k, key));
+      };
+      return Map;
+    }()
   }
-}());
-(function () {
-  function toString(n) {
-    return n.toString();
+};
+Maxime.scope['maxime.Num'] = {
+  Num: {
+    Num: function () {
+      var Num = function () {
+        this.constructor = 'Num';
+        this.properties = [];
+      };
+      Num.prototype.toString = function () {
+        return n.toString();
+      };
+      Num.prototype._plus_ = function (n) {
+        return 0;
+      };
+      Num.prototype._minus_ = function (n) {
+        return 0;
+      };
+      Num.prototype._asterisk_ = function (n) {
+        return 0;
+      };
+      Num.prototype._slash_ = function (n) {
+        return 0;
+      };
+      return Num;
+    }()
+  },
+  min: function (x, y) {
+    return x;
+  },
+  abs: function (x) {
+    return x;
   }
-}());
-(function () {
-  Maxime.declare('maxime,Option.None', function () {
-    this.constructor = function () {
-      return 'None';
-    };
-    this.properties = function () {
-      return [];
-    };
-  });
-  Maxime.declare('maxime,Option.Some', function (a) {
-    this.constructor = function () {
-      return 'Some';
-    };
-    this.properties = function () {
-      return [a];
-    };
-    this.a = function () {
-      return a;
-    };
-  });
-  function map(o, f) {
-    return Maxime.patternMatch([
-      {
-        pattern: {
-          'type': 'constructor',
-          'name': 'Some',
-          'params': [{
-              'type': 'variable',
-              'name': 's'
-            }]
-        },
-        callback: function (s) {
-          return new (Maxime.get([object Object]))(f(s));
-        }
-      },
-      {
-        pattern: {
-          'type': 'constructor',
-          'name': 'None',
-          'params': []
-        },
-        callback: function () {
-          return new (Maxime.get([object Object]))();
-        }
-      }
-    ], o);
+};
+Maxime.scope['maxime.Option'] = {
+  Option: {
+    None: function () {
+      var None = function () {
+        this.constructor = 'None';
+        this.properties = [];
+      };
+      None.prototype.map = function (f) {
+        return new Maxime.scope['maxime.Option']['Option']['None']();
+      };
+      return None;
+    }(),
+    Some: function () {
+      var Some = function (a) {
+        this.constructor = 'Some';
+        this.properties = [a];
+        this.a = a;
+      };
+      Some.prototype.map = function (f) {
+        return new Maxime.scope['maxime.Option']['Option']['Some'](f(a));
+      };
+      return Some;
+    }()
   }
-}());
-(function () {
-  function toStringDISABLED(n) {
+};
+Maxime.scope['maxime.Printable'] = {
+  Printable: {
+    Printable: function () {
+      var Printable = function () {
+        this.constructor = 'Printable';
+        this.properties = [];
+      };
+      Printable.prototype.toString = function () {
+        return new Maxime.scope['maxime.String']['String']['String']('');
+      };
+      return Printable;
+    }()
   }
-}());
-(function () {
-  function println(s) {
-    return console.log(s);
+};
+Maxime.scope['maxime.RegExp'] = {
+  RegExp: {
+    RegExp: function () {
+      var RegExp = function (s, modifiers) {
+        this.constructor = 'RegExp';
+        this.properties = [
+          s,
+          modifiers
+        ];
+        this.s = s;
+        this.modifiers = modifiers;
+      };
+      return RegExp;
+    }()
   }
-}());
-(function () {
-  Maxime.declare('maxime,tuples.Pair', function (fst, snd) {
-    this.constructor = function () {
-      return 'Pair';
-    };
-    this.properties = function () {
-      return [
-        fst,
-        snd
-      ];
-    };
-    this.fst = function () {
-      return fst;
-    };
-    this.snd = function () {
-      return snd;
-    };
-  });
-}());
-(function () {
-  function map(functor, func) {
+};
+Maxime.scope['maxime.String'] = {
+  String: {
+    String: function () {
+      var String = function (s) {
+        this.constructor = 'String';
+        this.properties = [s];
+        this.s = s;
+      };
+      String.prototype._plus_ = function (s) {
+        return new Maxime.scope['maxime.String']['String']['String']('');
+      };
+      String.prototype.println = function () {
+        return console.log(this.s);
+      };
+      String.prototype.replace = function (regex, replacement) {
+        return new Maxime.scope['maxime.String']['String']['String']('');
+      };
+      return String;
+    }()
   }
-  Maxime.declare('stdlib.Pair', function (fst, snd) {
-    this.constructor = function () {
-      return 'Pair';
-    };
-    this.properties = function () {
-      return [
-        fst,
-        snd
-      ];
-    };
-    this.fst = function () {
-      return fst;
-    };
-    this.snd = function () {
-      return snd;
-    };
-  });
-  function fst(p) {
-    return p.fst();
+};
+Maxime.scope['maxime.tuples'] = {
+  Pair: {
+    Pair: function () {
+      var Pair = function (fst, snd) {
+        this.constructor = 'Pair';
+        this.properties = [
+          fst,
+          snd
+        ];
+        this.fst = fst;
+        this.snd = snd;
+      };
+      return Pair;
+    }()
   }
-  function snd(p) {
-    return p.snd();
+};
+Maxime.scope['maxime.Void'] = {
+  Void: {
+    Void: function () {
+      var Void = function () {
+        this.constructor = 'Void';
+        this.properties = [];
+      };
+      return Void;
+    }()
   }
-}());
-(function () {
-  Maxime.declare('svg.LengthUnit', function (pxFactor) {
-    this.constructor = function () {
-      return 'LengthUnit';
-    };
-    this.properties = function () {
-      return [pxFactor];
-    };
-    this.pxFactor = function () {
-      return pxFactor;
-    };
-  });
-  var px = new (Maxime.get([object Object]))(1);
-  var mm = new (Maxime.get([object Object]))(25.4);
-  Maxime.declare('svg.Length', function (value, unit) {
-    this.constructor = function () {
-      return 'Length';
-    };
-    this.properties = function () {
-      return [
-        value,
-        unit
-      ];
-    };
-    this.value = function () {
-      return value;
-    };
-    this.unit = function () {
-      return unit;
-    };
-  });
-  function convert(l, targetUnit) {
-    return new (Maxime.get([object Object]))(times(div(l.value(), l.unit().pxFactor()), targetUnit.pxFactor()), targetUnit);
+};
+Maxime.scope['stdlib'] = {
+  Pair: {
+    Pair: function () {
+      var Pair = function (first, second) {
+        this.constructor = 'Pair';
+        this.properties = [
+          first,
+          second
+        ];
+        this.first = first;
+        this.second = second;
+      };
+      Pair.prototype.fst = function () {
+        return first;
+      };
+      Pair.prototype.snd = function () {
+        return second;
+      };
+      return Pair;
+    }()
   }
-  function setMatrix(node, m) {
+};
+Maxime.scope['svg'] = {
+  LengthUnit: {
+    LengthUnit: function () {
+      var LengthUnit = function (pxFactor) {
+        this.constructor = 'LengthUnit';
+        this.properties = [pxFactor];
+        this.pxFactor = pxFactor;
+      };
+      return LengthUnit;
+    }()
+  },
+  Length: {
+    Length: function () {
+      var Length = function (value, unit) {
+        this.constructor = 'Length';
+        this.properties = [
+          value,
+          unit
+        ];
+        this.value = value;
+        this.unit = unit;
+      };
+      Length.prototype.convert = function (l, targetUnit) {
+        return new Maxime.scope['svg']['Length']['Length'](l.value()._slash_(l.unit().pxFactor())._asterisk_(targetUnit.pxFactor()), targetUnit);
+      };
+      return Length;
+    }()
+  },
+  Line: {
+    SvgLine: function () {
+      var SvgLine = function (n) {
+        this.constructor = 'SvgLine';
+        this.properties = [n];
+        this.n = n;
+      };
+      return SvgLine;
+    }()
   }
-  Maxime.declare('svg.SvgLine', function (n) {
-    this.constructor = function () {
-      return 'SvgLine';
-    };
-    this.properties = function () {
-      return [n];
-    };
-    this.n = function () {
-      return n;
-    };
-  });
-}());
-/*console.log(Maxime.scope);*/ module.exports = Maxime.scope.maxime.compiler.Compiler.compile;
+};
+/*console.log(Maxime.scope);*/ module.exports = Maxime.scope["maxime.compiler.Compiler"].compile;
