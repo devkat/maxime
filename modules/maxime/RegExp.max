@@ -1,2 +1,4 @@
+import maxime.String
+
 class RegExp
   RegExp(s:String, modifiers:String)

@@ -11,40 +11,11 @@ class List[a] is Functor
   join(sep:String) → String = ""
 
   Cons(headElem: a, tailList: List[a])
-  map(f: a → b) → List[b] = Cons(f(headElem), map(tailList, f))
+  map(f: a → b) → List[b] = Cons(f(headElem), tailList.map(f))
   head() → Option[a] = headElem
   tail() → List[a] = tailList
   ++(l: List[a]) → List[a] = Cons(headElem, tailList ++ l)
   length() → Num = 1 + tailList.length()
-  join(f: a → String, sep:String) → String = f(headElem) + sep + tailList.join(sep)
-
-/*
-class List[a] is Functor
-  Cons(head: a, tail: List[a])
-  Nil()
-  
-  def list_map (list: List[a], f: a → b) → List[b] =
-    list match
-      case Cons(head, tail) => Cons(f(head), list_map(tail, f))
-      case Nil() => Nil()
-
-  def head (list: List[a]) → a = list.head
-
-  def tail (list: List[a]) → List[a] = list.tail
-
-  def concat (l1: List[a], l2: List[a]) → List[a] =
-    l1 match
-      case Nil() => l2
-      case Cons(head, tail) => Cons(head, concat(tail, l2))
-
-  def length (l: List[a]) → Num =
-    l match
-      case Nil() => 0
-      case Cons(head, tail) => 1 + length(tail)
-
-  def join (l: List[a], sep: String) → String =
-    l match
-      case Nil() => ""
-      case Cons(head, Nil()) => toString(head)
-      case Cons(head, tail) => toString(head) + sep + join(tail, sep)
-*/
+  join(f: a → String, sep:String) → String = tailList match
+    case Nil => f(headElem)
+    case _ => f(headElem) + sep + tailList.join(f, sep)

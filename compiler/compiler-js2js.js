@@ -90,8 +90,8 @@ var Maxime = new MaximeCtor();
           assignments: []
         };
       case "constructor":
-        if (pattern.name === ref.constructor() && pattern.params.length === ref.properties().length) {
-          return _.zip([ pattern.params, ref.properties() ]).reduce(function(prev, pair) {
+        if (pattern.name === ref.constructor() && pattern.params.length === ref.properties.length) {
+          return _.zip([ pattern.params, ref.properties ]).reduce(function(prev, pair) {
             var
               subPattern = pair[0],
               ref = pair[1],
@@ -113,7 +113,7 @@ var Maxime = new MaximeCtor();
       clause = clauses[i];
       match = patternMatch(clause.pattern, ref);
       if (match.match) {
-        log("Matched pattern ", clause.pattern, 'against', ref.properties(), ' -> ', match.assignments);
+        log("Matched pattern ", clause.pattern, 'against', ref.properties, ' -> ', match.assignments);
         return clause.callback.apply(null, match.assignments);
       }
     }
@@ -161,10 +161,10 @@ var
 
 function array2list(a) {
   if (a.length === 0) {
-    return new Nil();
+    return new Maxime.scope.__maxime__List._List._Nil();
   }
   else {
-    return new Cons(a[0], array2list(a.slice(1)));
+    return new Maxime.scope.__maxime__List._List._Cons(a[0], array2list(a.slice(1)));
   }
 }
 
@@ -176,8 +176,10 @@ function regexp(str, mod) {
   return new RegExp(str, mod);
 }
 
-function findFiles(p, regex) {
-  return array2list(filesystem.findFiles(p, regex));
+function _findFiles(p, regex) {
+  return array2list(filesystem.findFiles(p._s, regex).map(function(f) {
+    return new Maxime.scope.__maxime__String._String._String(f);
+  }));
 }
 
 function readFile(p) {
@@ -196,377 +198,458 @@ function prop(obj, name) {
   return obj[name];
 }
 
-Maxime.scope['dom'] = {
-  Node: {
-    Node: function () {
-      var Node = function (parent, localName, attrs) {
-        this.constructor = 'Node';
-        this.properties = [
-          parent,
-          localName,
-          attrs
+Maxime.scope.__dom = function () {
+  var __dom = {};
+  __dom._Node = {
+    _Node: function () {
+      var _Node = function (_parent, _localName, _attrs) {
+        this._constructor = 'Node';
+        this._properties = [
+          this._parent,
+          this._localName,
+          this._attrs
         ];
-        this.parent = parent;
-        this.localName = localName;
-        this.attrs = attrs;
+        this._parent = _parent;
+        this._localName = _localName;
+        this._attrs = _attrs;
       };
-      Node.prototype.attr = function (name) {
-        return attrs.get(name);
+      _Node.prototype._attr = function (_name) {
+        return this._attrs._get(_name);
       };
-      return Node;
+      return _Node;
     }()
-  }
-};
-Maxime.scope['geom'] = {
-  Point: {
-    Point: function () {
-      var Point = function (x, y) {
-        this.constructor = 'Point';
-        this.properties = [
-          x,
-          y
+  };
+  return __dom;
+}();
+Maxime.scope.__geom = function () {
+  var __geom = {};
+  __geom._Point = {
+    _Point: function () {
+      var _Point = function (_x, _y) {
+        this._constructor = 'Point';
+        this._properties = [
+          this._x,
+          this._y
         ];
-        this.x = x;
-        this.y = y;
+        this._x = _x;
+        this._y = _y;
       };
-      Point.prototype.swap = function () {
-        return new Maxime.scope['geom']['Point']['Point'](y, x);
+      _Point.prototype._swap = function () {
+        return new Maxime.scope.__geom._Point._Point(this._y, this._x);
       };
-      Point.prototype.bounds = function () {
-        return new Maxime.scope['geom']['Rect']['Rect'](x, y, 0, 0);
+      _Point.prototype._bounds = function () {
+        return new Maxime.scope.__geom._Rect._Rect(this._x, this._y, new Maxime.scope.__maxime__Num._Num._Num(0), new Maxime.scope.__maxime__Num._Num._Num(0));
       };
-      return Point;
+      return _Point;
     }()
-  },
-  Line: {
-    Line: function () {
-      var Line = function (x1, y1, x2, y2) {
-        this.constructor = 'Line';
-        this.properties = [
-          x1,
-          y1,
-          x2,
-          y2
+  };
+  __geom._Line = {
+    _Line: function () {
+      var _Line = function (_x1, _y1, _x2, _y2) {
+        this._constructor = 'Line';
+        this._properties = [
+          this._x1,
+          this._y1,
+          this._x2,
+          this._y2
         ];
-        this.x1 = x1;
-        this.y1 = y1;
-        this.x2 = x2;
-        this.y2 = y2;
+        this._x1 = _x1;
+        this._y1 = _y1;
+        this._x2 = _x2;
+        this._y2 = _y2;
       };
-      Line.prototype.bounds = function () {
-        return new Maxime.scope['geom']['Rect']['Rect'](min(x1, x2), min(y1, y2), abs(x2._minus_(x1)), abs(y2._minus_(y1)));
+      _Line.prototype._bounds = function () {
+        return new Maxime.scope.__geom._Rect._Rect(_min(this._x1, this._x2), _min(this._y1, this._y2), _abs(this._x2.__minus_(this._x1)), _abs(this._y2.__minus_(this._y1)));
       };
-      return Line;
+      return _Line;
     }()
-  },
-  Rect: {
-    Rect: function () {
-      var Rect = function (x, y, width, height) {
-        this.constructor = 'Rect';
-        this.properties = [
-          x,
-          y,
-          width,
-          height
+  };
+  __geom._Rect = {
+    _Rect: function () {
+      var _Rect = function (_x, _y, _width, _height) {
+        this._constructor = 'Rect';
+        this._properties = [
+          this._x,
+          this._y,
+          this._width,
+          this._height
         ];
-        this.x = x;
-        this.y = y;
-        this.width = width;
-        this.height = height;
+        this._x = _x;
+        this._y = _y;
+        this._width = _width;
+        this._height = _height;
       };
-      Rect.prototype.bounds = function () {
-        return new Maxime.scope['geom']['Rect']['Rect'](0, 0, width, height);
+      _Rect.prototype._bounds = function () {
+        return new Maxime.scope.__geom._Rect._Rect(new Maxime.scope.__maxime__Num._Num._Num(0), new Maxime.scope.__maxime__Num._Num._Num(0), this._width, this._height);
       };
-      return Rect;
+      return _Rect;
     }()
-  },
-  Matrix: {
-    Matrix: function () {
-      var Matrix = function (a, b, c, d, e, f) {
-        this.constructor = 'Matrix';
-        this.properties = [
-          a,
-          b,
-          c,
-          d,
-          e,
-          f
+  };
+  __geom._Matrix = {
+    _Matrix: function () {
+      var _Matrix = function (_a, _b, _c, _d, _e, _f) {
+        this._constructor = 'Matrix';
+        this._properties = [
+          this._a,
+          this._b,
+          this._c,
+          this._d,
+          this._e,
+          this._f
         ];
-        this.a = a;
-        this.b = b;
-        this.c = c;
-        this.d = d;
-        this.e = e;
-        this.f = f;
+        this._a = _a;
+        this._b = _b;
+        this._c = _c;
+        this._d = _d;
+        this._e = _e;
+        this._f = _f;
       };
-      return Matrix;
+      return _Matrix;
     }()
-  }
-};
-Maxime.scope['maxime.Bool'] = {
-  Bool: {
-    True: function () {
-      var True = function () {
-        this.constructor = 'True';
-        this.properties = [];
+  };
+  return __geom;
+}();
+Maxime.scope.__maxime__Bool = function () {
+  var __maxime__Bool = {};
+  __maxime__Bool._Bool = {
+    _True: function () {
+      var _True = function () {
+        this._constructor = 'True';
+        this._properties = [];
       };
-      True.prototype.not = function () {
-        return new Maxime.scope['maxime.Bool']['Bool']['False']();
+      _True.prototype._not = function () {
+        return new Maxime.scope.__maxime__Bool._Bool._False();
       };
-      return True;
+      return _True;
     }(),
-    False: function () {
-      var False = function () {
-        this.constructor = 'False';
-        this.properties = [];
+    _False: function () {
+      var _False = function () {
+        this._constructor = 'False';
+        this._properties = [];
       };
-      False.prototype.not = function () {
-        return new Maxime.scope['maxime.Bool']['Bool']['True']();
+      _False.prototype._not = function () {
+        return new Maxime.scope.__maxime__Bool._Bool._True();
       };
-      return False;
+      return _False;
     }()
-  }
-};
-Maxime.scope['maxime.compiler.ast.BinaryExpr'] = {
-  BinaryExpr: {
-    BinaryExpr: function () {
-      var BinaryExpr = function (left, operator, right) {
-        this.constructor = 'BinaryExpr';
-        this.properties = [
-          left,
-          operator,
-          right
+  };
+  return __maxime__Bool;
+}();
+Maxime.scope.__maxime__compiler__ast__BinaryExpr = function () {
+  var __maxime__compiler__ast__BinaryExpr = {};
+  __maxime__compiler__ast__BinaryExpr._Expr = {
+    _Expr: function () {
+      var _Expr = function () {
+        this._constructor = 'Expr';
+        this._properties = [];
+      };
+      return _Expr;
+    }()
+  };
+  __maxime__compiler__ast__BinaryExpr._Operator = {
+    _Operator: function () {
+      var _Operator = function () {
+        this._constructor = 'Operator';
+        this._properties = [];
+      };
+      return _Operator;
+    }()
+  };
+  __maxime__compiler__ast__BinaryExpr._BinaryExpr = {
+    _BinaryExpr: function () {
+      var _BinaryExpr = function (_left, _operator, _right) {
+        this._constructor = 'BinaryExpr';
+        this._properties = [
+          this._left,
+          this._operator,
+          this._right
         ];
-        this.left = left;
-        this.operator = operator;
-        this.right = right;
+        this._left = _left;
+        this._operator = _operator;
+        this._right = _right;
       };
-      BinaryExpr.prototype.transcode = function () {
-        return new Maxime.scope['maxime.String']['String']['String']('');
+      _BinaryExpr.prototype._transcode = function () {
+        return new Maxime.scope.__maxime__String._String._String('');
       };
-      return BinaryExpr;
+      return _BinaryExpr;
     }()
-  }
-};
-Maxime.scope['maxime.compiler.Compiler'] = {
-  Compiler: {
-    Compiler: function () {
-      var Compiler = function () {
-        this.constructor = 'Compiler';
-        this.properties = [];
+  };
+  return __maxime__compiler__ast__BinaryExpr;
+}();
+Maxime.scope.__maxime__compiler__Compiler = function () {
+  var __maxime__compiler__Compiler = {};
+  __maxime__compiler__Compiler._Compiler = {
+    _Compiler: function () {
+      var _Compiler = function () {
+        this._constructor = 'Compiler';
+        this._properties = [];
       };
-      Compiler.prototype.compile = function (sources, target, options) {
+      _Compiler.prototype._compile = function (_sources, _target, _options) {
         return function () {
-          function toString(s) {
-            return s.toString();
+          function _toString(_s) {
+            return _s._toString();
           }
-          new Maxime.scope['maxime.String']['String']['String']('Compiling ')._plus_(sources.map(toString).join(new Maxime.scope['maxime.String']['String']['String'](', ')))._plus_(new Maxime.scope['maxime.String']['String']['String'](' to '))._plus_(target).println();
-          var CompilationUnit = {
-              CompilationUnit: function () {
-                var CompilationUnit = function (path, maxFiles, jsFiles) {
-                  this.constructor = 'CompilationUnit';
-                  this.properties = [
-                    path,
-                    maxFiles,
-                    jsFiles
+          function _id(_s) {
+            return _s;
+          }
+          new Maxime.scope.__maxime__String._String._String('Compiling ').__plus_(_sources._join(_id, new Maxime.scope.__maxime__String._String._String(', '))).__plus_(new Maxime.scope.__maxime__String._String._String(' to ')).__plus_(_target)._println();
+          var _CompilationUnit = {
+              _CompilationUnit: function () {
+                var _CompilationUnit = function (_path, _maxFiles, _jsFiles) {
+                  this._constructor = 'CompilationUnit';
+                  this._properties = [
+                    this._path,
+                    this._maxFiles,
+                    this._jsFiles
                   ];
-                  this.path = path;
-                  this.maxFiles = maxFiles;
-                  this.jsFiles = jsFiles;
+                  this._path = _path;
+                  this._maxFiles = _maxFiles;
+                  this._jsFiles = _jsFiles;
                 };
-                return CompilationUnit;
+                _CompilationUnit.prototype._toString = function () {
+                  return this._path;
+                };
+                return _CompilationUnit;
               }()
             };
-          function mkCompilationUnit(path) {
-            return new Maxime.scope['maxime.compiler.Compiler']['Compiler']['Compiler']['compile']['CompilationUnit']['CompilationUnit'](path, findFiles(path, new Maxime.scope['maxime.RegExp']['RegExp']['RegExp'](new Maxime.scope['maxime.String']['String']['String']('\\.max$'), new Maxime.scope['maxime.String']['String']['String'](''))), findFiles(path, new Maxime.scope['maxime.RegExp']['RegExp']['RegExp'](new Maxime.scope['maxime.String']['String']['String']('\\.js$'), new Maxime.scope['maxime.String']['String']['String'](''))));
+          function _mkCompilationUnit(_path) {
+            return new _CompilationUnit._CompilationUnit(_path, _findFiles(_path, new Maxime.scope.__maxime__RegExp._RegExp._RegExp(new Maxime.scope.__maxime__String._String._String('\\.max$'), new Maxime.scope.__maxime__String._String._String(''))), _findFiles(_path, new Maxime.scope.__maxime__RegExp._RegExp._RegExp(new Maxime.scope.__maxime__String._String._String('\\.js$'), new Maxime.scope.__maxime__String._String._String(''))));
           }
-          var compilationUnits = sources.map(mkCompilationUnit);
-          new Maxime.scope['maxime.String']['String']['String']('Compilation units: ')._plus_(compilationUnits.map(toString)).println();
-          function compileUnit(unit) {
+          var _compilationUnits = _sources._map(_mkCompilationUnit);
+          new Maxime.scope.__maxime__String._String._String('Compilation units: ').__plus_(_compilationUnits._map(_toString))._println();
+          function _compileUnit(_unit) {
             return function () {
-              var Source = {
-                  Source: function () {
-                    var Source = function (code, file) {
-                      this.constructor = 'Source';
-                      this.properties = [
-                        code,
-                        file
+              var _Source = {
+                  _Source: function () {
+                    var _Source = function (_code, _file) {
+                      this._constructor = 'Source';
+                      this._properties = [
+                        this._code,
+                        this._file
                       ];
-                      this.code = code;
-                      this.file = file;
+                      this._code = _code;
+                      this._file = _file;
                     };
-                    return Source;
+                    return _Source;
                   }()
                 };
-              function readSource(file) {
-                return new Maxime.scope['maxime.compiler.Compiler']['Compiler']['Compiler']['compile']['compileUnit']['Source']['Source'](new Maxime.scope['maxime.io.File']['File']['File'](unit.path()._plus_(new Maxime.scope['maxime.String']['String']['String']('/'))._plus_(file)).read(), file);
+              function _readSource(_file) {
+                return new _Source._Source(new Maxime.scope.__maxime__io__File._File._File(_unit._path.__plus_(new Maxime.scope.__maxime__String._String._String('/')).__plus_(_file))._read(), _file);
               }
-              function parse(source) {
-                return source;
+              function _parse(_source) {
+                return _source;
               }
-              function generate(source) {
-                return source;
+              function _generate(_source) {
+                return _source;
               }
-              function compileSource(source) {
+              function _compileSource(_source) {
                 return function () {
-                  var moduleName = source.file().replace(new Maxime.scope['maxime.String']['String']['String']('\\/g'), new Maxime.scope['maxime.String']['String']['String']('.')).replace(new Maxime.scope['maxime.String']['String']['String']('\\.max$g'), new Maxime.scope['maxime.String']['String']['String'](''));
-                  new Maxime.scope['maxime.String']['String']['String']('Compiling module ')._plus_(moduleName).println();
-                  var ast = parse(source);
-                  return generate(ast);
+                  var _moduleName = _source._file._replace(new Maxime.scope.__maxime__String._String._String('\\/'), new Maxime.scope.__maxime__String._String._String('.'))._replace(new Maxime.scope.__maxime__String._String._String('\\.max$'), new Maxime.scope.__maxime__String._String._String(''));
+                  new Maxime.scope.__maxime__String._String._String('Compiling module ').__plus_(_moduleName)._println();
+                  var _ast = _parse(_source);
+                  return _generate(_ast);
                 }();
               }
-              function getCode(s) {
-                return s.code();
+              function _getCode(_s) {
+                return _s._code;
               }
-              var jsSources = unit.jsFiles().map(readSource).map(getCode);
-              var maxSources = unit.maxFiles().map(readSource);
-              var maxTargets = maxSources.map(compileSource);
-              return jsSources._plus__plus_(maxTargets).join(new Maxime.scope['maxime.String']['String']['String']('\n'));
+              var _jsSources = _unit._jsFiles._map(_readSource)._map(_getCode);
+              var _maxSources = _unit._maxFiles._map(_readSource);
+              var _maxTargets = _maxSources._map(_compileSource);
+              return _jsSources.__plus__plus_(_maxTargets)._join(_toString, new Maxime.scope.__maxime__String._String._String('\n'));
             }();
           }
-          var codes = compilationUnits.map(compileUnit);
-          var code = codes.join(new Maxime.scope['maxime.String']['String']['String']('\\n'));
-          return code;
+          var _codes = _compilationUnits._map(_compileUnit);
+          var _code = _codes._join(new Maxime.scope.__maxime__String._String._String('\\n'));
+          return _code;
         }();
       };
-      return Compiler;
+      return _Compiler;
     }()
-  },
-  compile: function (sources, target, options) {
-    return new Maxime.scope['maxime.compiler.Compiler']['Compiler']['Compiler']().compile(sources, target, options);
-  }
-};
-Maxime.scope['maxime.ecmascript.ast'] = {
-  BinaryExpression: {
-    BinaryExpression: function () {
-      var BinaryExpression = function (left, operator, right) {
-        this.constructor = 'BinaryExpression';
-        this.properties = [
-          left,
-          operator,
-          right
+  };
+  __maxime__compiler__Compiler._compile = function (_sources, _target, _options) {
+    return function () {
+      function _mkString(_s) {
+        return new Maxime.scope.__maxime__String._String._String(_s);
+      }
+      return new Maxime.scope.__maxime__compiler__Compiler._Compiler._Compiler()._compile(_sources._map(_mkString), _target, _options);
+    }();
+  };
+  return __maxime__compiler__Compiler;
+}();
+Maxime.scope.__maxime__ecmascript__ast = function () {
+  var __maxime__ecmascript__ast = {};
+  __maxime__ecmascript__ast._Expr = {
+    _Expr: function () {
+      var _Expr = function () {
+        this._constructor = 'Expr';
+        this._properties = [];
+      };
+      return _Expr;
+    }()
+  };
+  __maxime__ecmascript__ast._BinaryExpression = {
+    _BinaryExpression: function () {
+      var _BinaryExpression = function (_left, _operator, _right) {
+        this._constructor = 'BinaryExpression';
+        this._properties = [
+          this._left,
+          this._operator,
+          this._right
         ];
-        this.left = left;
-        this.operator = operator;
-        this.right = right;
+        this._left = _left;
+        this._operator = _operator;
+        this._right = _right;
       };
-      return BinaryExpression;
+      return _BinaryExpression;
     }()
-  }
-};
-Maxime.scope['maxime.io.File'] = {
-  Path: {
-    Path: function () {
-      var Path = function () {
-        this.constructor = 'Path';
-        this.properties = [];
+  };
+  return __maxime__ecmascript__ast;
+}();
+Maxime.scope.__maxime__Eq = function () {
+  var __maxime__Eq = {};
+  return __maxime__Eq;
+}();
+Maxime.scope.__maxime__Functor = function () {
+  var __maxime__Functor = {};
+  return __maxime__Functor;
+}();
+Maxime.scope.__maxime__io__File = function () {
+  var __maxime__io__File = {};
+  __maxime__io__File._Path = {
+    _Path: function () {
+      var _Path = function () {
+        this._constructor = 'Path';
+        this._properties = [];
       };
-      return Path;
+      return _Path;
     }()
-  },
-  File: {
-    File: function () {
-      var File = function () {
-        this.constructor = 'File';
-        this.properties = [];
+  };
+  __maxime__io__File._File = {
+    _File: function () {
+      var _File = function () {
+        this._constructor = 'File';
+        this._properties = [];
       };
-      File.prototype.read = function () {
-        return new Maxime.scope['maxime.String']['String']['String']('');
+      _File.prototype._read = function () {
+        return new Maxime.scope.__maxime__String._String._String('');
       };
-      return File;
+      return _File;
     }()
-  },
-  findFiles: function (p, r) {
-    return new Maxime.scope['maxime.List']['List']['Nil']();
-  }
-};
-Maxime.scope['maxime.List'] = {
-  List: {
-    Nil: function () {
-      var Nil = function () {
-        this.constructor = 'Nil';
-        this.properties = [];
+  };
+  __maxime__io__File._findFiles = function (_p, _r) {
+    return new Maxime.scope.__maxime__List._List._Nil();
+  };
+  return __maxime__io__File;
+}();
+Maxime.scope.__maxime__List = function () {
+  var __maxime__List = {};
+  __maxime__List._List = {
+    _Nil: function () {
+      var _Nil = function () {
+        this._constructor = 'Nil';
+        this._properties = [];
       };
-      Nil.prototype.map = function (f) {
-        return new Maxime.scope['maxime.List']['List']['Nil']();
+      _Nil.prototype._map = function (_f) {
+        return new Maxime.scope.__maxime__List._List._Nil();
       };
-      Nil.prototype.head = function () {
-        return new Maxime.scope['maxime.Option']['Option']['None']();
+      _Nil.prototype._head = function () {
+        return new Maxime.scope.__maxime__Option._Option._None();
       };
-      Nil.prototype.tail = function () {
-        return new Maxime.scope['maxime.List']['List']['Nil']();
+      _Nil.prototype._tail = function () {
+        return new Maxime.scope.__maxime__List._List._Nil();
       };
-      Nil.prototype._plus__plus_ = function (l) {
-        return l;
+      _Nil.prototype.__plus__plus_ = function (_l) {
+        return _l;
       };
-      Nil.prototype.length = function () {
-        return 0;
+      _Nil.prototype._length = function () {
+        return new Maxime.scope.__maxime__Num._Num._Num(0);
       };
-      Nil.prototype.join = function (sep) {
-        return new Maxime.scope['maxime.String']['String']['String']('');
+      _Nil.prototype._join = function (_sep) {
+        return new Maxime.scope.__maxime__String._String._String('');
       };
-      return Nil;
+      return _Nil;
     }(),
-    Cons: function () {
-      var Cons = function (headElem, tailList) {
-        this.constructor = 'Cons';
-        this.properties = [
-          headElem,
-          tailList
+    _Cons: function () {
+      var _Cons = function (_headElem, _tailList) {
+        this._constructor = 'Cons';
+        this._properties = [
+          this._headElem,
+          this._tailList
         ];
-        this.headElem = headElem;
-        this.tailList = tailList;
+        this._headElem = _headElem;
+        this._tailList = _tailList;
       };
-      Cons.prototype.map = function (f) {
-        return new Maxime.scope['maxime.List']['List']['Cons'](f(headElem), map(tailList, f));
+      _Cons.prototype._map = function (_f) {
+        return new Maxime.scope.__maxime__List._List._Cons(_f(this._headElem), this._tailList._map(_f));
       };
-      Cons.prototype.head = function () {
-        return headElem;
+      _Cons.prototype._head = function () {
+        return this._headElem;
       };
-      Cons.prototype.tail = function () {
-        return tailList;
+      _Cons.prototype._tail = function () {
+        return this._tailList;
       };
-      Cons.prototype._plus__plus_ = function (l) {
-        return new Maxime.scope['maxime.List']['List']['Cons'](headElem, tailList._plus__plus_(l));
+      _Cons.prototype.__plus__plus_ = function (_l) {
+        return new Maxime.scope.__maxime__List._List._Cons(this._headElem, this._tailList.__plus__plus_(_l));
       };
-      Cons.prototype.length = function () {
-        return 1.._plus_(tailList.length());
+      _Cons.prototype._length = function () {
+        return new Maxime.scope.__maxime__Num._Num._Num(1).__plus_(this._tailList._length());
       };
-      Cons.prototype.join = function (f, sep) {
-        return f(headElem)._plus_(sep)._plus_(tailList.join(sep));
+      _Cons.prototype._join = function (_f, _sep) {
+        return Maxime.patternMatch([
+          {
+            pattern: {
+              'type': 'constructor',
+              'name': 'Nil',
+              'params': []
+            },
+            callback: function () {
+              return _f(this._headElem);
+            }
+          },
+          {
+            pattern: { 'type': 'wildcard' },
+            callback: function () {
+              console.log("HEAD", this._headElem);
+              return _f(this._headElem).__plus_(_sep).__plus_(this._tailList._join(_f, _sep));
+            }
+          }
+        ], this._tailList);
       };
-      return Cons;
+      return _Cons;
     }()
-  }
-};
-Maxime.scope['maxime.Map'] = {
-  Map: {
-    EmptyMap: function () {
-      var EmptyMap = function () {
-        this.constructor = 'EmptyMap';
-        this.properties = [];
+  };
+  return __maxime__List;
+}();
+Maxime.scope.__maxime__Map = function () {
+  var __maxime__Map = {};
+  __maxime__Map._Map = {
+    _EmptyMap: function () {
+      var _EmptyMap = function () {
+        this._constructor = 'EmptyMap';
+        this._properties = [];
       };
-      EmptyMap.prototype.put = function (key, value) {
-        return new Maxime.scope['maxime.Map']['Map']['Map'](key, value, new Maxime.scope['maxime.Map']['Map']['EmptyMap']());
+      _EmptyMap.prototype._put = function (_key, _value) {
+        return new Maxime.scope.__maxime__Map._Map._Map(_key, _value, new Maxime.scope.__maxime__Map._Map._EmptyMap());
       };
-      EmptyMap.prototype.get = function (key) {
-        return new Maxime.scope['maxime.Option']['Option']['None']();
+      _EmptyMap.prototype._get = function (_key) {
+        return new Maxime.scope.__maxime__Option._Option._None();
       };
-      return EmptyMap;
+      return _EmptyMap;
     }(),
-    Map: function () {
-      var Map = function (key, value, rest) {
-        this.constructor = 'Map';
-        this.properties = [
-          key,
-          value,
-          rest
+    _Map: function () {
+      var _Map = function (_key, _value, _rest) {
+        this._constructor = 'Map';
+        this._properties = [
+          this._key,
+          this._value,
+          this._rest
         ];
-        this.key = key;
-        this.value = value;
-        this.rest = rest;
+        this._key = _key;
+        this._value = _value;
+        this._rest = _rest;
       };
-      Map.prototype.put = function (k, v) {
+      _Map.prototype._put = function (_k, _v) {
         return Maxime.patternMatch([
           {
             pattern: {
@@ -575,7 +658,7 @@ Maxime.scope['maxime.Map'] = {
               'params': []
             },
             callback: function () {
-              return new Maxime.scope['maxime.Map']['Map']['Map'](key, v, rest);
+              return new Maxime.scope.__maxime__Map._Map._Map(this._key, _v, this._rest);
             }
           },
           {
@@ -585,12 +668,12 @@ Maxime.scope['maxime.Map'] = {
               'params': []
             },
             callback: function () {
-              return new Maxime.scope['maxime.Map']['Map']['Map'](key, value, rest.put(k, v));
+              return new Maxime.scope.__maxime__Map._Map._Map(this._key, this._value, this._rest._put(_k, _v));
             }
           }
-        ], eq(k, key));
+        ], _k.__equals__equals_(this._key));
       };
-      Map.prototype.get = function (k) {
+      _Map.prototype._get = function (_k) {
         return Maxime.patternMatch([
           {
             pattern: {
@@ -599,7 +682,7 @@ Maxime.scope['maxime.Map'] = {
               'params': []
             },
             callback: function () {
-              return value;
+              return this._value;
             }
           },
           {
@@ -609,209 +692,228 @@ Maxime.scope['maxime.Map'] = {
               'params': []
             },
             callback: function () {
-              return rest.get(key);
+              return this._rest._get(this._key);
             }
           }
-        ], eq(k, key));
+        ], _k.__equals__equals_(this._key));
       };
-      return Map;
+      return _Map;
     }()
-  }
-};
-Maxime.scope['maxime.Num'] = {
-  Num: {
-    Num: function () {
-      var Num = function () {
-        this.constructor = 'Num';
-        this.properties = [];
+  };
+  return __maxime__Map;
+}();
+Maxime.scope.__maxime__Num = function () {
+  var __maxime__Num = {};
+  __maxime__Num._Num = {
+    _Num: function () {
+      var _Num = function () {
+        this._constructor = 'Num';
+        this._properties = [];
       };
-      Num.prototype.toString = function () {
+      _Num.prototype._toString = function () {
         return n.toString();
       };
-      Num.prototype._plus_ = function (n) {
-        return 0;
+      _Num.prototype.__plus_ = function (_n) {
+        return new Maxime.scope.__maxime__Num._Num._Num(0);
       };
-      Num.prototype._minus_ = function (n) {
-        return 0;
+      _Num.prototype.__minus_ = function (_n) {
+        return new Maxime.scope.__maxime__Num._Num._Num(0);
       };
-      Num.prototype._asterisk_ = function (n) {
-        return 0;
+      _Num.prototype.__asterisk_ = function (_n) {
+        return new Maxime.scope.__maxime__Num._Num._Num(0);
       };
-      Num.prototype._slash_ = function (n) {
-        return 0;
+      _Num.prototype.__slash_ = function (_n) {
+        return new Maxime.scope.__maxime__Num._Num._Num(0);
       };
-      return Num;
+      return _Num;
     }()
-  },
-  min: function (x, y) {
-    return x;
-  },
-  abs: function (x) {
-    return x;
-  }
-};
-Maxime.scope['maxime.Option'] = {
-  Option: {
-    None: function () {
-      var None = function () {
-        this.constructor = 'None';
-        this.properties = [];
+  };
+  __maxime__Num._min = function (_x, _y) {
+    return _x;
+  };
+  __maxime__Num._abs = function (_x) {
+    return _x;
+  };
+  return __maxime__Num;
+}();
+Maxime.scope.__maxime__Option = function () {
+  var __maxime__Option = {};
+  __maxime__Option._Option = {
+    _None: function () {
+      var _None = function () {
+        this._constructor = 'None';
+        this._properties = [];
       };
-      None.prototype.map = function (f) {
-        return new Maxime.scope['maxime.Option']['Option']['None']();
+      _None.prototype._map = function (_f) {
+        return new Maxime.scope.__maxime__Option._Option._None();
       };
-      return None;
+      return _None;
     }(),
-    Some: function () {
-      var Some = function (a) {
-        this.constructor = 'Some';
-        this.properties = [a];
-        this.a = a;
+    _Some: function () {
+      var _Some = function (_a) {
+        this._constructor = 'Some';
+        this._properties = [this._a];
+        this._a = _a;
       };
-      Some.prototype.map = function (f) {
-        return new Maxime.scope['maxime.Option']['Option']['Some'](f(a));
+      _Some.prototype._map = function (_f) {
+        return new Maxime.scope.__maxime__Option._Option._Some(_f(this._a));
       };
-      return Some;
+      return _Some;
     }()
-  }
-};
-Maxime.scope['maxime.Printable'] = {
-  Printable: {
-    Printable: function () {
-      var Printable = function () {
-        this.constructor = 'Printable';
-        this.properties = [];
+  };
+  return __maxime__Option;
+}();
+Maxime.scope.__maxime__Printable = function () {
+  var __maxime__Printable = {};
+  __maxime__Printable._Printable = {
+    _Printable: function () {
+      var _Printable = function () {
+        this._constructor = 'Printable';
+        this._properties = [];
       };
-      Printable.prototype.toString = function () {
-        return new Maxime.scope['maxime.String']['String']['String']('');
+      _Printable.prototype._toString = function () {
+        return new Maxime.scope.__maxime__String._String._String('');
       };
-      return Printable;
+      return _Printable;
     }()
-  }
-};
-Maxime.scope['maxime.RegExp'] = {
-  RegExp: {
-    RegExp: function () {
-      var RegExp = function (s, modifiers) {
-        this.constructor = 'RegExp';
-        this.properties = [
-          s,
-          modifiers
+  };
+  return __maxime__Printable;
+}();
+Maxime.scope.__maxime__RegExp = function () {
+  var __maxime__RegExp = {};
+  __maxime__RegExp._RegExp = {
+    _RegExp: function () {
+      var _RegExp = function (_s, _modifiers) {
+        this._constructor = 'RegExp';
+        this._properties = [
+          this._s,
+          this._modifiers
         ];
-        this.s = s;
-        this.modifiers = modifiers;
+        this._s = _s;
+        this._modifiers = _modifiers;
       };
-      return RegExp;
+      return _RegExp;
     }()
-  }
-};
-Maxime.scope['maxime.String'] = {
-  String: {
-    String: function () {
-      var String = function (s) {
-        this.constructor = 'String';
-        this.properties = [s];
-        this.s = s;
+  };
+  return __maxime__RegExp;
+}();
+Maxime.scope.__maxime__String = function () {
+  var __maxime__String = {};
+  __maxime__String._String = {
+    _String: function () {
+      var _String = function (_s) {
+        this._constructor = 'String';
+        this._properties = [this._s];
+        this._s = _s;
       };
-      String.prototype._plus_ = function (s) {
-        return new Maxime.scope['maxime.String']['String']['String']('');
+      _String.prototype.__plus_ = function (_s) {
+        return new Maxime.scope.__maxime__String._String._String(this._s + _s._s);
       };
-      String.prototype.println = function () {
-        return console.log(this.s);
+      _String.prototype._println = function () {
+        return console.log(this._s);
       };
-      String.prototype.replace = function (regex, replacement) {
-        return new Maxime.scope['maxime.String']['String']['String']('');
+      _String.prototype._replace = function (_regex, _replacement) {
+        return new Maxime.scope.__maxime__String._String._String(this._s.replace(new RegExp(_regex._s, 'g'), _replacement._s));
       };
-      return String;
+      return _String;
     }()
-  }
-};
-Maxime.scope['maxime.tuples'] = {
-  Pair: {
-    Pair: function () {
-      var Pair = function (fst, snd) {
-        this.constructor = 'Pair';
-        this.properties = [
-          fst,
-          snd
+  };
+  return __maxime__String;
+}();
+Maxime.scope.__maxime__tuples = function () {
+  var __maxime__tuples = {};
+  __maxime__tuples._Pair = {
+    _Pair: function () {
+      var _Pair = function (_fst, _snd) {
+        this._constructor = 'Pair';
+        this._properties = [
+          this._fst,
+          this._snd
         ];
-        this.fst = fst;
-        this.snd = snd;
+        this._fst = _fst;
+        this._snd = _snd;
       };
-      return Pair;
+      return _Pair;
     }()
-  }
-};
-Maxime.scope['maxime.Void'] = {
-  Void: {
-    Void: function () {
-      var Void = function () {
-        this.constructor = 'Void';
-        this.properties = [];
+  };
+  return __maxime__tuples;
+}();
+Maxime.scope.__maxime__Void = function () {
+  var __maxime__Void = {};
+  __maxime__Void._Void = {
+    _Void: function () {
+      var _Void = function () {
+        this._constructor = 'Void';
+        this._properties = [];
       };
-      return Void;
+      return _Void;
     }()
-  }
-};
-Maxime.scope['stdlib'] = {
-  Pair: {
-    Pair: function () {
-      var Pair = function (first, second) {
-        this.constructor = 'Pair';
-        this.properties = [
-          first,
-          second
+  };
+  return __maxime__Void;
+}();
+Maxime.scope.__stdlib = function () {
+  var __stdlib = {};
+  __stdlib._Pair = {
+    _Pair: function () {
+      var _Pair = function (_first, _second) {
+        this._constructor = 'Pair';
+        this._properties = [
+          this._first,
+          this._second
         ];
-        this.first = first;
-        this.second = second;
+        this._first = _first;
+        this._second = _second;
       };
-      Pair.prototype.fst = function () {
-        return first;
+      _Pair.prototype._fst = function () {
+        return this._first;
       };
-      Pair.prototype.snd = function () {
-        return second;
+      _Pair.prototype._snd = function () {
+        return this._second;
       };
-      return Pair;
+      return _Pair;
     }()
-  }
-};
-Maxime.scope['svg'] = {
-  LengthUnit: {
-    LengthUnit: function () {
-      var LengthUnit = function (pxFactor) {
-        this.constructor = 'LengthUnit';
-        this.properties = [pxFactor];
-        this.pxFactor = pxFactor;
+  };
+  return __stdlib;
+}();
+Maxime.scope.__svg = function () {
+  var __svg = {};
+  __svg._LengthUnit = {
+    _LengthUnit: function () {
+      var _LengthUnit = function (_pxFactor) {
+        this._constructor = 'LengthUnit';
+        this._properties = [this._pxFactor];
+        this._pxFactor = _pxFactor;
       };
-      return LengthUnit;
+      return _LengthUnit;
     }()
-  },
-  Length: {
-    Length: function () {
-      var Length = function (value, unit) {
-        this.constructor = 'Length';
-        this.properties = [
-          value,
-          unit
+  };
+  __svg._Length = {
+    _Length: function () {
+      var _Length = function (_value, _unit) {
+        this._constructor = 'Length';
+        this._properties = [
+          this._value,
+          this._unit
         ];
-        this.value = value;
-        this.unit = unit;
+        this._value = _value;
+        this._unit = _unit;
       };
-      Length.prototype.convert = function (l, targetUnit) {
-        return new Maxime.scope['svg']['Length']['Length'](l.value()._slash_(l.unit().pxFactor())._asterisk_(targetUnit.pxFactor()), targetUnit);
+      _Length.prototype._convert = function (_l, _targetUnit) {
+        return new Maxime.scope.__svg._Length._Length(_l._value.__slash_(_l._unit._pxFactor).__asterisk_(_targetUnit._pxFactor), _targetUnit);
       };
-      return Length;
+      return _Length;
     }()
-  },
-  Line: {
-    SvgLine: function () {
-      var SvgLine = function (n) {
-        this.constructor = 'SvgLine';
-        this.properties = [n];
-        this.n = n;
+  };
+  __svg._Line = {
+    _SvgLine: function () {
+      var _SvgLine = function (_n) {
+        this._constructor = 'SvgLine';
+        this._properties = [this._n];
+        this._n = _n;
       };
-      return SvgLine;
+      return _SvgLine;
     }()
-  }
-};
-/*console.log(Maxime.scope);*/ module.exports = Maxime.scope["maxime.compiler.Compiler"].compile;
+  };
+  return __svg;
+}();
+/*console.log(Maxime.scope);*/ module.exports = function(sources, target, options) { Maxime.scope.__maxime__compiler__Compiler._compile(array2list(sources), target, options); };

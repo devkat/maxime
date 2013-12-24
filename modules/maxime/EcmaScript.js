@@ -4,10 +4,10 @@ var
 
 function array2list(a) {
   if (a.length === 0) {
-    return new Nil();
+    return new Maxime.scope.__maxime__List._List._Nil();
   }
   else {
-    return new Cons(a[0], array2list(a.slice(1)));
+    return new Maxime.scope.__maxime__List._List._Cons(a[0], array2list(a.slice(1)));
   }
 }
 
@@ -19,8 +19,10 @@ function regexp(str, mod) {
   return new RegExp(str, mod);
 }
 
-function findFiles(p, regex) {
-  return array2list(filesystem.findFiles(p, regex));
+function _findFiles(p, regex) {
+  return array2list(filesystem.findFiles(p._s, regex).map(function(f) {
+    return new Maxime.scope.__maxime__String._String._String(f);
+  }));
 }
 
 function readFile(p) {

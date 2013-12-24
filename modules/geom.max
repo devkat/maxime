@@ -1,11 +1,11 @@
 import maxime.Num
 
-feature Shape[s]
-  bounds(shape: s) -> Rect
+feature Shape s
+  bounds() -> Rect
 
 
 class Point is Shape
-  Point(x: Number, y: Number)
+  Point(x: Num, y: Num)
   swap() -> Point = Point(y, x)
   bounds() -> Rect = Rect(x, y, 0, 0)
 

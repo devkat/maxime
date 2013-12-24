@@ -1,6 +1,8 @@
-class Option[a] is Functor[a]
+import maxime.Functor
+
+class Option[a] is Functor
   None
-  map(f: a -> b) -> Option[b] = None
+  map(f: a → b) -> Option[b] = None
   
   Some(a:a)
-  map(f: a -> b) -> Option[b] = Some(f(a))
+  map(f: a → b) -> Option[b] = Some(f(a))

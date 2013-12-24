@@ -1,0 +1,2 @@
+feature Functor f[a]
+  map[b](func: a → b) → f[b]

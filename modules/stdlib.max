@@ -5,9 +5,6 @@ type JSObj {
 }
 */
 
-feature Functor[f]
-  map(func: a -> b) -> f[b]
-
 
 class Pair[a, b]
   Pair(first: a, second: b)

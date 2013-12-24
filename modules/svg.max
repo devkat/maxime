@@ -1,4 +1,5 @@
 import geom
+import dom
 
 class LengthUnit
   LengthUnit(pxFactor: Num)
@@ -18,8 +19,8 @@ def matrixToString(m: Matrix) -> Unit =
   sprintf("transform(%d %d %d %d %d %d)", [ m.a, m.b, m.c, m.d, m.e, m.f ])
 */
 
-feature Transformable[t]
-  setMatrix(node: t, m: Matrix) -> Unit
+feature Transformable t
+  setMatrix(m: Matrix) -> t
 
 
 /*

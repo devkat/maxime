@@ -1,2 +1,7 @@
+import maxime.String
+
+class Expr
+  Expr
+
 class BinaryExpression
-  BinaryExpression(left:Expression, operator:String, right:Expression)
+  BinaryExpression(left:Expr, operator:String, right:Expr)

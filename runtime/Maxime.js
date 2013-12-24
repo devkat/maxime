@@ -90,8 +90,8 @@ var Maxime = new MaximeCtor();
           assignments: []
         };
       case "constructor":
-        if (pattern.name === ref.constructor() && pattern.params.length === ref.properties().length) {
-          return _.zip([ pattern.params, ref.properties() ]).reduce(function(prev, pair) {
+        if (pattern.name === ref.constructor() && pattern.params.length === ref.properties.length) {
+          return _.zip([ pattern.params, ref.properties ]).reduce(function(prev, pair) {
             var
               subPattern = pair[0],
               ref = pair[1],
@@ -113,7 +113,7 @@ var Maxime = new MaximeCtor();
       clause = clauses[i];
       match = patternMatch(clause.pattern, ref);
       if (match.match) {
-        log("Matched pattern ", clause.pattern, 'against', ref.properties(), ' -> ', match.assignments);
+        log("Matched pattern ", clause.pattern, 'against', ref.properties, ' -> ', match.assignments);
         return clause.callback.apply(null, match.assignments);
       }
     }

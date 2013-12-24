@@ -5,13 +5,15 @@ import maxime.RegExp
 
 class Compiler
   Compiler
-  compile(sources: List[File], target: File, options: Map[String, Any]) → Void =
+  compile(sources: List[String], target: File, options: Map[String, Any]) → Void =
     def toString(s:Printable) -> String = s.toString()
+    def id(s:String) -> String = s
     
-    ("Compiling " + sources.map(toString).join(", ") + " to " + target).println()
+    ("Compiling " + sources.join(id, ", ") + " to " + target).println()
     
-    class CompilationUnit
+    class CompilationUnit is Printable
       CompilationUnit(path:String, maxFiles:List[String], jsFiles:List[String])
+      toString() -> String = path
     
     def mkCompilationUnit(path:String) -> CompilationUnit =
       CompilationUnit(path, findFiles(path, RegExp("\.max$", "")), findFiles(path, RegExp("\.js$", "")))
@@ -31,7 +33,7 @@ class Compiler
       def generate(source:Source) -> Source = source
 
       def compileSource(source:Source) -> String =
-        val moduleName = source.file.replace("\/g", ".").replace("\.max$g", "")
+        val moduleName = source.file.replace("\/", ".").replace("\.max$", "")
         ("Compiling module " + moduleName).println()
         val ast = parse(source)
         generate(ast)
@@ -41,7 +43,7 @@ class Compiler
       val jsSources = unit.jsFiles.map(readSource).map(getCode)
       val maxSources = unit.maxFiles.map(readSource)
       val maxTargets = maxSources.map(compileSource)
-      (jsSources ++ maxTargets).join("
+      (jsSources ++ maxTargets).join(toString, "
 ")
     
     val codes = compilationUnits.map(compileUnit)
@@ -50,4 +52,6 @@ class Compiler
     //writeFile(target, prop(options, "before") + runtimeLib + code + prop(options, "after"))
     code
 
-def compile(sources: List[File], target: File, options: Map[String, Any]) -> Void = Compiler.compile(sources, target, options)
+def compile(sources: List[File], target: File, options: Map[String, Any]) -> Void =
+  def mkString(s: String) -> String = String(s)
+  Compiler.compile(sources.map(mkString), target, options)

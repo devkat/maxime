@@ -2,6 +2,6 @@ import maxime.Void
 
 class String
   String(s:Void)
-  +(s:String) -> String = ""
-  println() -> Void = `console.log(this.s)`
-  replace(regex:String, replacement:String) -> String = ""
+  +(s:String) -> String = String(`this._s + _s._s`)
+  println() -> Void = `console.log(this._s)`
+  replace(regex:String, replacement:String) -> String = String(`this._s.replace(new RegExp(_regex._s, 'g'), _replacement._s)`)

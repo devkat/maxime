@@ -1,6 +1,7 @@
 import maxime.Option
+import maxime.Eq
 
-class Map[a, b]
+class Map[a is Eq, b is Eq]
 
   EmptyMap
   put(key: a, value: b) -> Map[a, b] = Map(key, value, EmptyMap)
@@ -9,11 +10,11 @@ class Map[a, b]
   Map(key: a, value: b, rest: Map[a, b])
   
   put(k: a, v: b) -> Map[a, b] =
-    eq(k, key) match
+    k == key match
       case True => Map(key, v, rest)
       case False => Map(key, value, rest.put(k, v))
 
   get(k: a) -> Option[b] =
-    eq(k, key) match
+    k == key match
       case True => value
       case False => rest.get(key)
