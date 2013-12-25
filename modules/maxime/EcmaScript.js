@@ -1,15 +1,21 @@
+var EcmaScript = {};
+
 var
   fs = require('fs'),
   filesystem = require('../lib/filesystem');
 
-function array2list(a) {
+EcmaScript.array2list = function(a) {
   if (a.length === 0) {
     return new Maxime.scope.__maxime__List._List._Nil();
   }
   else {
-    return new Maxime.scope.__maxime__List._List._Cons(a[0], array2list(a.slice(1)));
+    return new Maxime.scope.__maxime__List._List._Cons(a[0], EcmaScript.array2list(a.slice(1)));
   }
-}
+};
+
+EcmaScript.mkString = function(s) {
+  return new Maxime.scope.__maxime__String._String._String(s);
+};
 
 function toJson(o) {
   return JSON.stringify(o);
@@ -17,12 +23,6 @@ function toJson(o) {
 
 function regexp(str, mod) {
   return new RegExp(str, mod);
-}
-
-function _findFiles(p, regex) {
-  return array2list(filesystem.findFiles(p._s, regex).map(function(f) {
-    return new Maxime.scope.__maxime__String._String._String(f);
-  }));
 }
 
 function readFile(p) {
@@ -40,3 +40,5 @@ function replace(str, regex, rep) {
 function prop(obj, name) {
   return obj[name];
 }
+
+module.exports = EcmaScript;

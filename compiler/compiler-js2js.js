@@ -155,18 +155,24 @@ function generate(maxAst) {
 }
 
 
+var EcmaScript = {};
+
 var
   fs = require('fs'),
   filesystem = require('../lib/filesystem');
 
-function array2list(a) {
+EcmaScript.array2list = function(a) {
   if (a.length === 0) {
     return new Maxime.scope.__maxime__List._List._Nil();
   }
   else {
-    return new Maxime.scope.__maxime__List._List._Cons(a[0], array2list(a.slice(1)));
+    return new Maxime.scope.__maxime__List._List._Cons(a[0], EcmaScript.array2list(a.slice(1)));
   }
-}
+};
+
+EcmaScript.mkString = function(s) {
+  return new Maxime.scope.__maxime__String._String._String(s);
+};
 
 function toJson(o) {
   return JSON.stringify(o);
@@ -174,12 +180,6 @@ function toJson(o) {
 
 function regexp(str, mod) {
   return new RegExp(str, mod);
-}
-
-function _findFiles(p, regex) {
-  return array2list(filesystem.findFiles(p._s, regex).map(function(f) {
-    return new Maxime.scope.__maxime__String._String._String(f);
-  }));
 }
 
 function readFile(p) {
@@ -197,6 +197,34 @@ function replace(str, regex, rep) {
 function prop(obj, name) {
   return obj[name];
 }
+
+module.exports = EcmaScript;
+Maxime.scope.__maxime__io__FileSystem = function () {
+  var __maxime__io__FileSystem = {};
+  __maxime__io__FileSystem._FileSystem = {
+    _FileSystem: function () {
+      var _FileSystem = function () {
+        this._constructor = 'Path';
+        this._properties = [];
+      };
+      _FileSystem.prototype._findFiles = function (_path, _regexp) {
+        var that = this;
+        var
+          fs = require('fs'),
+          filesystem = require('../lib/filesystem'),
+          EcmaScript = require('./EcmaScript');
+        
+        var path = EcmaScript.list2array(_path).join('/');
+        var files = filesystem.findFiles(path, _regexp._s).map(function(f) {
+          return EcmaScript.mkString(f);
+        });
+        return EcmaScript.array2list(files);
+      };
+      return _FileSystem;
+    }()
+  };
+  return __maxime__io__FileSystem;
+}();
 
 Maxime.scope.__dom = function () {
   var __dom = {};
@@ -423,10 +451,14 @@ Maxime.scope.__maxime__compiler__Compiler = function () {
               }()
             };
           function _mkCompilationUnit(_path) {
-            return new _CompilationUnit._CompilationUnit(_path, _findFiles(_path, new Maxime.scope.__maxime__RegExp._RegExp._RegExp(new Maxime.scope.__maxime__String._String._String('\\.max$'), new Maxime.scope.__maxime__String._String._String(''))), _findFiles(_path, new Maxime.scope.__maxime__RegExp._RegExp._RegExp(new Maxime.scope.__maxime__String._String._String('\\.js$'), new Maxime.scope.__maxime__String._String._String(''))));
+            return function () {
+              var _maxFiles = new Maxime.scope.__maxime__io__FileSystem._FileSystem._FileSystem()._findFiles(_path, new Maxime.scope.__maxime__RegExp._RegExp._RegExp(new Maxime.scope.__maxime__String._String._String('\\.max$'), new Maxime.scope.__maxime__String._String._String('')));
+              var _jsFiles = new Maxime.scope.__maxime__io__FileSystem._FileSystem._FileSystem()._findFiles(_path, new Maxime.scope.__maxime__RegExp._RegExp._RegExp(new Maxime.scope.__maxime__String._String._String('\\.js$'), new Maxime.scope.__maxime__String._String._String('')));
+              return new _CompilationUnit._CompilationUnit(_path, _maxFiles, _jsFiles);
+            }();
           }
           var _compilationUnits = _sources._map(_mkCompilationUnit);
-          new Maxime.scope.__maxime__String._String._String('Compilation units: ').__plus_(_compilationUnits._map(_toString))._println();
+          new Maxime.scope.__maxime__String._String._String('Compilation units: ').__plus_(_compilationUnits._map(_toString)._join(_id, new Maxime.scope.__maxime__String._String._String(',')))._println();
           function _compileUnit(_unit) {
             return function () {
               var _Source = {
@@ -442,7 +474,7 @@ Maxime.scope.__maxime__compiler__Compiler = function () {
                     };
                     _Source.prototype._toString = function () {
                       var that = this;
-                      return that._file;
+                      return that._file._toString();
                     };
                     return _Source;
                   }()
@@ -458,7 +490,7 @@ Maxime.scope.__maxime__compiler__Compiler = function () {
               }
               function _compileSource(_source) {
                 return function () {
-                  var _moduleName = _source._file._replace(new Maxime.scope.__maxime__String._String._String('\\/'), new Maxime.scope.__maxime__String._String._String('.'))._replace(new Maxime.scope.__maxime__String._String._String('\\.max$'), new Maxime.scope.__maxime__String._String._String(''));
+                  var _moduleName = _source._file._path._segments._join(_id, new Maxime.scope.__maxime__String._String._String('.'));
                   new Maxime.scope.__maxime__String._String._String('Compiling module ').__plus_(_moduleName)._println();
                   var _ast = _parse(_source);
                   return _generate(_ast);
@@ -530,32 +562,69 @@ Maxime.scope.__maxime__Functor = function () {
 }();
 Maxime.scope.__maxime__io__File = function () {
   var __maxime__io__File = {};
-  __maxime__io__File._Path = {
-    _Path: function () {
-      var _Path = function () {
-        this._constructor = 'Path';
-        this._properties = [];
-      };
-      return _Path;
-    }()
-  };
   __maxime__io__File._File = {
     _File: function () {
-      var _File = function () {
+      var _File = function (_path) {
         this._constructor = 'File';
-        this._properties = [];
+        this._properties = [this._path];
+        this._path = _path;
       };
       _File.prototype._read = function () {
         var that = this;
         return new Maxime.scope.__maxime__String._String._String('');
       };
+      _File.prototype._toString = function () {
+        var that = this;
+        return that._path._toString();
+      };
       return _File;
     }()
   };
-  __maxime__io__File._findFiles = function (_p, _r) {
-    return new Maxime.scope.__maxime__List._List._Nil();
-  };
   return __maxime__io__File;
+}();
+Maxime.scope.__maxime__io__FileSystem = function () {
+  var __maxime__io__FileSystem = {};
+  __maxime__io__FileSystem._FileSystem = {
+    _FileSystem: function () {
+      var _FileSystem = function () {
+        this._constructor = 'FileSystem';
+        this._properties = [];
+      };
+      _FileSystem.prototype._findFiles = function (_root, _regex) {
+        var that = this;
+        return new Maxime.scope.__maxime__List._List._Nil();
+      };
+      return _FileSystem;
+    }()
+  };
+  return __maxime__io__FileSystem;
+}();
+Maxime.scope.__maxime__io__Path = function () {
+  var __maxime__io__Path = {};
+  __maxime__io__Path._Path = {
+    _Path: function () {
+      var _Path = function (_segments, _absolute) {
+        this._constructor = 'Path';
+        this._properties = [
+          this._segments,
+          this._absolute
+        ];
+        this._segments = _segments;
+        this._absolute = _absolute;
+      };
+      _Path.prototype._toString = function () {
+        var that = this;
+        return function () {
+          function _id(_s) {
+            return _s;
+          }
+          return that._segments._join(_id, new Maxime.scope.__maxime__String._String._String('/'));
+        }();
+      };
+      return _Path;
+    }()
+  };
+  return __maxime__io__Path;
 }();
 Maxime.scope.__maxime__List = function () {
   var __maxime__List = {};
@@ -960,4 +1029,4 @@ Maxime.scope.__svg = function () {
   };
   return __svg;
 }();
-/*console.log(Maxime.scope);*/ module.exports = function(sources, target, options) { Maxime.scope.__maxime__compiler__Compiler._compile(array2list(sources), target, options); };
+/*console.log(Maxime.scope);*/ module.exports = function(sources, target, options) { Maxime.scope.__maxime__compiler__Compiler._compile(EcmaScript.array2list(sources), EcmaScript.mkString(target), options); };

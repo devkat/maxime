@@ -1,0 +1,5 @@
+import maxime.io.File
+
+class FileSystem
+  FileSystem
+  findFiles(root: File, regex: String) -> List[File] = Nil

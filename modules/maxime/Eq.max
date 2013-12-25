@@ -1,2 +1,2 @@
 feature Eq e
-  ==(other:e) -> Bool
+  ==(other:e) → Bool

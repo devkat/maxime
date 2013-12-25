@@ -1,11 +1,7 @@
-import maxime.RegExp
 import maxime.List
+import maxime.io.Path
 
-class Path
-  Path
-
-class File
-  File
+class File is Printable
+  File(path: Path)
   read() → String = ""
-
-def findFiles(p:Path, r:RegExp) → List[File] = Nil
+  toString() → String = path.toString()

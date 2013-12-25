@@ -1,0 +1,8 @@
+import maxime.List
+import maxime.Bool
+
+class Path is Printable
+  Path(segments: List[String], absolute: Bool)
+  toString() → String =
+    def id(s: String) → String = s
+    segments.join(id, "/")
