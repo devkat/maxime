@@ -90,8 +90,8 @@ var Maxime = new MaximeCtor();
           assignments: []
         };
       case "constructor":
-        if (pattern.name === ref.constructor() && pattern.params.length === ref.properties.length) {
-          return _.zip([ pattern.params, ref.properties ]).reduce(function(prev, pair) {
+        if (pattern.name === ref._constructor && pattern.params.length === ref._properties.length) {
+          return _.zip([ pattern.params, ref._properties ]).reduce(function(prev, pair) {
             var
               subPattern = pair[0],
               ref = pair[1],
@@ -113,7 +113,7 @@ var Maxime = new MaximeCtor();
       clause = clauses[i];
       match = patternMatch(clause.pattern, ref);
       if (match.match) {
-        log("Matched pattern ", clause.pattern, 'against', ref.properties, ' -> ', match.assignments);
+        log("Matched pattern ", clause.pattern, 'against', ref._properties, ' -> ', match.assignments);
         return clause.callback.apply(null, match.assignments);
       }
     }
@@ -214,7 +214,8 @@ Maxime.scope.__dom = function () {
         this._attrs = _attrs;
       };
       _Node.prototype._attr = function (_name) {
-        return this._attrs._get(_name);
+        var that = this;
+        return that._attrs._get(_name);
       };
       return _Node;
     }()
@@ -235,10 +236,12 @@ Maxime.scope.__geom = function () {
         this._y = _y;
       };
       _Point.prototype._swap = function () {
-        return new Maxime.scope.__geom._Point._Point(this._y, this._x);
+        var that = this;
+        return new Maxime.scope.__geom._Point._Point(that._y, that._x);
       };
       _Point.prototype._bounds = function () {
-        return new Maxime.scope.__geom._Rect._Rect(this._x, this._y, new Maxime.scope.__maxime__Num._Num._Num(0), new Maxime.scope.__maxime__Num._Num._Num(0));
+        var that = this;
+        return new Maxime.scope.__geom._Rect._Rect(that._x, that._y, new Maxime.scope.__maxime__Num._Num._Num(0), new Maxime.scope.__maxime__Num._Num._Num(0));
       };
       return _Point;
     }()
@@ -259,7 +262,8 @@ Maxime.scope.__geom = function () {
         this._y2 = _y2;
       };
       _Line.prototype._bounds = function () {
-        return new Maxime.scope.__geom._Rect._Rect(_min(this._x1, this._x2), _min(this._y1, this._y2), _abs(this._x2.__minus_(this._x1)), _abs(this._y2.__minus_(this._y1)));
+        var that = this;
+        return new Maxime.scope.__geom._Rect._Rect(_min(that._x1, that._x2), _min(that._y1, that._y2), _abs(that._x2.__minus_(that._x1)), _abs(that._y2.__minus_(that._y1)));
       };
       return _Line;
     }()
@@ -280,7 +284,8 @@ Maxime.scope.__geom = function () {
         this._height = _height;
       };
       _Rect.prototype._bounds = function () {
-        return new Maxime.scope.__geom._Rect._Rect(new Maxime.scope.__maxime__Num._Num._Num(0), new Maxime.scope.__maxime__Num._Num._Num(0), this._width, this._height);
+        var that = this;
+        return new Maxime.scope.__geom._Rect._Rect(new Maxime.scope.__maxime__Num._Num._Num(0), new Maxime.scope.__maxime__Num._Num._Num(0), that._width, that._height);
       };
       return _Rect;
     }()
@@ -318,6 +323,7 @@ Maxime.scope.__maxime__Bool = function () {
         this._properties = [];
       };
       _True.prototype._not = function () {
+        var that = this;
         return new Maxime.scope.__maxime__Bool._Bool._False();
       };
       return _True;
@@ -328,6 +334,7 @@ Maxime.scope.__maxime__Bool = function () {
         this._properties = [];
       };
       _False.prototype._not = function () {
+        var that = this;
         return new Maxime.scope.__maxime__Bool._Bool._True();
       };
       return _False;
@@ -369,6 +376,7 @@ Maxime.scope.__maxime__compiler__ast__BinaryExpr = function () {
         this._right = _right;
       };
       _BinaryExpr.prototype._transcode = function () {
+        var that = this;
         return new Maxime.scope.__maxime__String._String._String('');
       };
       return _BinaryExpr;
@@ -385,6 +393,7 @@ Maxime.scope.__maxime__compiler__Compiler = function () {
         this._properties = [];
       };
       _Compiler.prototype._compile = function (_sources, _target, _options) {
+        var that = this;
         return function () {
           function _toString(_s) {
             return _s._toString();
@@ -407,7 +416,8 @@ Maxime.scope.__maxime__compiler__Compiler = function () {
                   this._jsFiles = _jsFiles;
                 };
                 _CompilationUnit.prototype._toString = function () {
-                  return this._path;
+                  var that = this;
+                  return that._path;
                 };
                 return _CompilationUnit;
               }()
@@ -429,6 +439,10 @@ Maxime.scope.__maxime__compiler__Compiler = function () {
                       ];
                       this._code = _code;
                       this._file = _file;
+                    };
+                    _Source.prototype._toString = function () {
+                      var that = this;
+                      return that._file;
                     };
                     return _Source;
                   }()
@@ -456,11 +470,11 @@ Maxime.scope.__maxime__compiler__Compiler = function () {
               var _jsSources = _unit._jsFiles._map(_readSource)._map(_getCode);
               var _maxSources = _unit._maxFiles._map(_readSource);
               var _maxTargets = _maxSources._map(_compileSource);
-              return _jsSources.__plus__plus_(_maxTargets)._join(_toString, new Maxime.scope.__maxime__String._String._String('\n'));
+              return _jsSources.__plus__plus_(_maxTargets._map(_toString))._join(_id, new Maxime.scope.__maxime__String._String._String('\n'));
             }();
           }
           var _codes = _compilationUnits._map(_compileUnit);
-          var _code = _codes._join(new Maxime.scope.__maxime__String._String._String('\\n'));
+          var _code = _codes._join(_id, new Maxime.scope.__maxime__String._String._String('\\n'));
           return _code;
         }();
       };
@@ -532,6 +546,7 @@ Maxime.scope.__maxime__io__File = function () {
         this._properties = [];
       };
       _File.prototype._read = function () {
+        var that = this;
         return new Maxime.scope.__maxime__String._String._String('');
       };
       return _File;
@@ -551,21 +566,27 @@ Maxime.scope.__maxime__List = function () {
         this._properties = [];
       };
       _Nil.prototype._map = function (_f) {
+        var that = this;
         return new Maxime.scope.__maxime__List._List._Nil();
       };
       _Nil.prototype._head = function () {
+        var that = this;
         return new Maxime.scope.__maxime__Option._Option._None();
       };
       _Nil.prototype._tail = function () {
+        var that = this;
         return new Maxime.scope.__maxime__List._List._Nil();
       };
       _Nil.prototype.__plus__plus_ = function (_l) {
+        var that = this;
         return _l;
       };
       _Nil.prototype._length = function () {
+        var that = this;
         return new Maxime.scope.__maxime__Num._Num._Num(0);
       };
       _Nil.prototype._join = function (_sep) {
+        var that = this;
         return new Maxime.scope.__maxime__String._String._String('');
       };
       return _Nil;
@@ -581,21 +602,27 @@ Maxime.scope.__maxime__List = function () {
         this._tailList = _tailList;
       };
       _Cons.prototype._map = function (_f) {
-        return new Maxime.scope.__maxime__List._List._Cons(_f(this._headElem), this._tailList._map(_f));
+        var that = this;
+        return new Maxime.scope.__maxime__List._List._Cons(_f(that._headElem), that._tailList._map(_f));
       };
       _Cons.prototype._head = function () {
-        return this._headElem;
+        var that = this;
+        return that._headElem;
       };
       _Cons.prototype._tail = function () {
-        return this._tailList;
+        var that = this;
+        return that._tailList;
       };
       _Cons.prototype.__plus__plus_ = function (_l) {
-        return new Maxime.scope.__maxime__List._List._Cons(this._headElem, this._tailList.__plus__plus_(_l));
+        var that = this;
+        return new Maxime.scope.__maxime__List._List._Cons(that._headElem, that._tailList.__plus__plus_(_l));
       };
       _Cons.prototype._length = function () {
-        return new Maxime.scope.__maxime__Num._Num._Num(1).__plus_(this._tailList._length());
+        var that = this;
+        return new Maxime.scope.__maxime__Num._Num._Num(1).__plus_(that._tailList._length());
       };
       _Cons.prototype._join = function (_f, _sep) {
+        var that = this;
         return Maxime.patternMatch([
           {
             pattern: {
@@ -604,17 +631,16 @@ Maxime.scope.__maxime__List = function () {
               'params': []
             },
             callback: function () {
-              return _f(this._headElem);
+              return _f(that._headElem);
             }
           },
           {
             pattern: { 'type': 'wildcard' },
             callback: function () {
-              console.log("HEAD", this._headElem);
-              return _f(this._headElem).__plus_(_sep).__plus_(this._tailList._join(_f, _sep));
+              return _f(that._headElem).__plus_(_sep).__plus_(that._tailList._join(_f, _sep));
             }
           }
-        ], this._tailList);
+        ], that._tailList);
       };
       return _Cons;
     }()
@@ -630,9 +656,11 @@ Maxime.scope.__maxime__Map = function () {
         this._properties = [];
       };
       _EmptyMap.prototype._put = function (_key, _value) {
+        var that = this;
         return new Maxime.scope.__maxime__Map._Map._Map(_key, _value, new Maxime.scope.__maxime__Map._Map._EmptyMap());
       };
       _EmptyMap.prototype._get = function (_key) {
+        var that = this;
         return new Maxime.scope.__maxime__Option._Option._None();
       };
       return _EmptyMap;
@@ -650,6 +678,7 @@ Maxime.scope.__maxime__Map = function () {
         this._rest = _rest;
       };
       _Map.prototype._put = function (_k, _v) {
+        var that = this;
         return Maxime.patternMatch([
           {
             pattern: {
@@ -658,7 +687,7 @@ Maxime.scope.__maxime__Map = function () {
               'params': []
             },
             callback: function () {
-              return new Maxime.scope.__maxime__Map._Map._Map(this._key, _v, this._rest);
+              return new Maxime.scope.__maxime__Map._Map._Map(that._key, _v, that._rest);
             }
           },
           {
@@ -668,12 +697,13 @@ Maxime.scope.__maxime__Map = function () {
               'params': []
             },
             callback: function () {
-              return new Maxime.scope.__maxime__Map._Map._Map(this._key, this._value, this._rest._put(_k, _v));
+              return new Maxime.scope.__maxime__Map._Map._Map(that._key, that._value, that._rest._put(_k, _v));
             }
           }
-        ], _k.__equals__equals_(this._key));
+        ], _k.__equals__equals_(that._key));
       };
       _Map.prototype._get = function (_k) {
+        var that = this;
         return Maxime.patternMatch([
           {
             pattern: {
@@ -682,7 +712,7 @@ Maxime.scope.__maxime__Map = function () {
               'params': []
             },
             callback: function () {
-              return this._value;
+              return that._value;
             }
           },
           {
@@ -692,10 +722,10 @@ Maxime.scope.__maxime__Map = function () {
               'params': []
             },
             callback: function () {
-              return this._rest._get(this._key);
+              return that._rest._get(that._key);
             }
           }
-        ], _k.__equals__equals_(this._key));
+        ], _k.__equals__equals_(that._key));
       };
       return _Map;
     }()
@@ -711,18 +741,23 @@ Maxime.scope.__maxime__Num = function () {
         this._properties = [];
       };
       _Num.prototype._toString = function () {
+        var that = this;
         return n.toString();
       };
       _Num.prototype.__plus_ = function (_n) {
+        var that = this;
         return new Maxime.scope.__maxime__Num._Num._Num(0);
       };
       _Num.prototype.__minus_ = function (_n) {
+        var that = this;
         return new Maxime.scope.__maxime__Num._Num._Num(0);
       };
       _Num.prototype.__asterisk_ = function (_n) {
+        var that = this;
         return new Maxime.scope.__maxime__Num._Num._Num(0);
       };
       _Num.prototype.__slash_ = function (_n) {
+        var that = this;
         return new Maxime.scope.__maxime__Num._Num._Num(0);
       };
       return _Num;
@@ -745,6 +780,7 @@ Maxime.scope.__maxime__Option = function () {
         this._properties = [];
       };
       _None.prototype._map = function (_f) {
+        var that = this;
         return new Maxime.scope.__maxime__Option._Option._None();
       };
       return _None;
@@ -756,7 +792,8 @@ Maxime.scope.__maxime__Option = function () {
         this._a = _a;
       };
       _Some.prototype._map = function (_f) {
-        return new Maxime.scope.__maxime__Option._Option._Some(_f(this._a));
+        var that = this;
+        return new Maxime.scope.__maxime__Option._Option._Some(_f(that._a));
       };
       return _Some;
     }()
@@ -772,6 +809,7 @@ Maxime.scope.__maxime__Printable = function () {
         this._properties = [];
       };
       _Printable.prototype._toString = function () {
+        var that = this;
         return new Maxime.scope.__maxime__String._String._String('');
       };
       return _Printable;
@@ -807,12 +845,15 @@ Maxime.scope.__maxime__String = function () {
         this._s = _s;
       };
       _String.prototype.__plus_ = function (_s) {
+        var that = this;
         return new Maxime.scope.__maxime__String._String._String(this._s + _s._s);
       };
       _String.prototype._println = function () {
+        var that = this;
         return console.log(this._s);
       };
       _String.prototype._replace = function (_regex, _replacement) {
+        var that = this;
         return new Maxime.scope.__maxime__String._String._String(this._s.replace(new RegExp(_regex._s, 'g'), _replacement._s));
       };
       return _String;
@@ -865,10 +906,12 @@ Maxime.scope.__stdlib = function () {
         this._second = _second;
       };
       _Pair.prototype._fst = function () {
-        return this._first;
+        var that = this;
+        return that._first;
       };
       _Pair.prototype._snd = function () {
-        return this._second;
+        var that = this;
+        return that._second;
       };
       return _Pair;
     }()
@@ -899,6 +942,7 @@ Maxime.scope.__svg = function () {
         this._unit = _unit;
       };
       _Length.prototype._convert = function (_l, _targetUnit) {
+        var that = this;
         return new Maxime.scope.__svg._Length._Length(_l._value.__slash_(_l._unit._pxFactor).__asterisk_(_targetUnit._pxFactor), _targetUnit);
       };
       return _Length;

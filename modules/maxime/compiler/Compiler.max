@@ -23,8 +23,9 @@ class Compiler
     
     def compileUnit(unit:CompilationUnit) -> String =
     
-      class Source
+      class Source is Printable
         Source(code:String, file:String)
+        toString() -> String = file
 
       def readSource(file:String) -> Source =
         Source(File(unit.path + "/" + file).read(), file)
@@ -32,7 +33,7 @@ class Compiler
       def parse(source:Source) -> Source = source
       def generate(source:Source) -> Source = source
 
-      def compileSource(source:Source) -> String =
+      def compileSource(source:Source) -> Source =
         val moduleName = source.file.replace("\/", ".").replace("\.max$", "")
         ("Compiling module " + moduleName).println()
         val ast = parse(source)
@@ -43,11 +44,11 @@ class Compiler
       val jsSources = unit.jsFiles.map(readSource).map(getCode)
       val maxSources = unit.maxFiles.map(readSource)
       val maxTargets = maxSources.map(compileSource)
-      (jsSources ++ maxTargets).join(toString, "
+      (jsSources ++ maxTargets.map(toString)).join(id, "
 ")
     
     val codes = compilationUnits.map(compileUnit)
-    val code = codes.join("\n")
+    val code = codes.join(id, "\n")
     //val runtimeLib = readFile("runtime/Maxime.js")
     //writeFile(target, prop(options, "before") + runtimeLib + code + prop(options, "after"))
     code
