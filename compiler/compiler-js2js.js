@@ -155,9 +155,570 @@ function generate(maxAst) {
 }
 
 
+function loc(start, end) {
+  end = end || start;
+  // console.log($$.toString(), $$);
+  var sprintf = require('sprintf');
+  return sprintf("$$.loc = yy.src.loc(@%d, @%d);", start, end);
+}
+        
+var maximeGrammar = {
+  "bnf": {
+
+/* ----------------------------------------------------------------------
+   Structure
+   ---------------------------------------------------------------------- */
+
+    "module": [
+      [ "statements EOF", "$$ = new yy.ModuleDecl($1);" + loc(1, 2) + "return $$;" ],
+      [ "NEWLINE statements EOF", "$$ = new yy.ModuleDecl($2);" + loc(1, 3) + "return $$;" ]
+    ],
+    
+    "statements": [
+      [ "statement", "$$ = [ $1 ];" ],
+      [ "statements statement", "$$ = $1.concat([ $2 ]);" ]
+    ],
+    
+    "statement": [
+      [ "import", "$$ = $1;" ],
+      [ "statementExpr", "$$ = $1;" ],
+      [ "decl", "$$ = $1;" ]
+    ],
+    
+    "inlineExpr": [
+      [ "atomicExpr", "$$ = $1;" ],
+      [ "lambdaExpr", "$$ = $1;" ],
+      [ "inlineExpr operator atomicExpr", "$$ = new yy.MethodCall($1, $2, [ $3 ]);" + loc(1, 3) ]
+    ],
+    
+    "operator": [
+      [ "OPERATOR", "$$ = new yy.Identifier($1);" + loc(1) ],
+    ],
+    
+    "atomicExpr": [
+      [ "call", "$$ = $1;" ],
+      [ "propertyAccess", "$$ = $1;" ],
+      [ "ref", "$$ = $1;" ],
+      [ "literal", "$$ = $1;" ],
+      [ "nativeExpr", "$$ = $1;" ]
+    ],
+    
+    "statementExpr": [
+      [ "caseExpr", "$$ = $1;" ],
+      [ "inlineExpr NEWLINE", "$$ = $1;" ]
+    ],
+    
+    "blockExpr": [
+      [ "statementExpr", "$$ = new yy.BlockExpr([ $1 ]);" + loc(1) ],
+      [ "NEWLINE INDENT statements OUTDENT", "$$ = new yy.BlockExpr($3);" ]
+    ],
+    
+/* ----------------------------------------------------------------------
+   Import
+   ---------------------------------------------------------------------- */
+
+    "import": [
+      [ "IMPORT qualifiedModuleNames NEWLINE", "$$ = new yy.ImportDecl($2);" + loc(1, 3) ]
+    ],
+
+    "qualifiedModuleNames": [
+      [ "qualifiedModuleName", "$$ = [ $1 ];" ],
+      [ "qualifiedModuleNames , qualifiedModuleName", "$$ = $1.concat([ $3 ]);" ]
+    ],
+    
+    "qualifiedModuleName": [
+      [ "identifier", "$$ = [ $1 ];" ],
+      [ "qualifiedModuleName . identifier", "$$ = $1.concat([ $3 ]);" ]
+    ],
+
+/* ----------------------------------------------------------------------
+   Native
+   ---------------------------------------------------------------------- */
+
+    "nativeExpr": [
+      [ "BACKTICK_LITERAL", "$$ = new yy.NativeExpr($1);" + loc(1) ]
+    ],
+    
+/* ----------------------------------------------------------------------
+   Identifiers
+   ---------------------------------------------------------------------- */
+  
+    "methodIdentifier": [
+      [ "lcIdentifier", "$$ = $1;" ],
+      [ "operator", "$$ = $1;" ]
+    ],
+  
+    "identifier": [
+      [ "lcIdentifier", "$$ = $1;" ],
+      [ "ucIdentifier", "$$ = $1;" ]
+    ],
+    
+    "lcIdentifier": [
+      [ "LC_IDENTIFIER", "$$ = new yy.Identifier($1);" + loc(1) ]
+    ],
+    
+    "ucIdentifier": [
+      [ "UC_IDENTIFIER", "$$ = new yy.Identifier($1);" + loc(1) ]
+    ],
+    
+/* ----------------------------------------------------------------------
+   Literals
+   ---------------------------------------------------------------------- */
+
+    "literal": [
+      [ "stringLiteral", "$$ = $1;" ],
+      [ "numericLiteral", "$$ = $1;" ],
+      [ "regexpLiteral", "$$ = $1;" ]
+    ],
+
+    "stringLiteral": [
+      [ "STRING_LITERAL", "$$ = new yy.Literal(yytext);" + loc(1) ]
+    ],
+
+    "numericLiteral": [
+      [ "NUMERIC_LITERAL", "$$ = new yy.Literal(yytext);" + loc(1) ]
+    ],
+    
+    "regexpLiteral": [
+      [ "REGEXP_LITERAL", "$$ = new yy.Literal(yytext);" + loc(1) ]
+    ],
+
+/* ----------------------------------------------------------------------
+   Calls
+   ---------------------------------------------------------------------- */
+
+    "call": [
+      [ "functionCall", "$$ = $1;" ],
+      [ "methodCall", "$$ = $1;" ],
+      [ "ctorCall", "$$ = $1;" ]
+    ],
+
+    "functionCall": [
+      [ "lcIdentifier ( args )", "$$ = new yy.FunctionCall($1, $3);" + loc(1, 4) ]
+    ],
+    
+    "ctorCall": [
+      [ "ucIdentifier", "$$ = new yy.CtorCall($1, []);" + loc(1, 1) ],
+      [ "ucIdentifier ( args )", "$$ = new yy.CtorCall($1, $3);" + loc(1, 4) ]
+    ],
+    
+    "methodCall": [
+      [ "atomicExpr . lcIdentifier ( args )", "$$ = new yy.MethodCall($1, $3, $5);" + loc(1, 6) ],
+      [ "( inlineExpr ) . lcIdentifier ( args )", "$$ = new yy.MethodCall($2, $5, $7);" + loc(1, 8) ]
+    ],
+    
+    "args": [
+      [ "", "$$ = [];" ],
+      [ "argList", "$$ = $1;" ]
+    ],
+    
+    "argList": [
+      [ "arg", "$$ = [ $1 ];" ],
+      [ "argList , arg", "$$ = $1.concat([ $3 ]);" ]
+    ],
+    
+    "arg": [
+      [ "inlineExpr", "$$ = $1;" ]
+    ],
+    
+/* ----------------------------------------------------------------------
+   Property access
+   ---------------------------------------------------------------------- */
+
+    "propertyAccess": [
+      [ "atomicExpr . lcIdentifier", "$$ = new yy.PropertyAccess($1, $3);" + loc(1, 3) ],
+      [ "( inlineExpr ) . lcIdentifier", "$$ = new yy.PropertyAccess($2, $4);" + loc(1, 5) ]
+    ],
+    
+/* ----------------------------------------------------------------------
+   Lambda expressions
+   ---------------------------------------------------------------------- */
+  
+    "lambdaExpr": [
+      [ "LAMBDA lambdaParams RIGHT_ARROW atomicExpr", "$$ = new yy.LambdaExpr($2, $4);" + loc(1, 4) ]
+    ],
+    
+    "lambdaParams": [
+      [ "", "$$ = [];" ],
+      [ "lambdaParamList", "$$ = $1;"]
+    ],
+    
+    "lambdaParamList": [
+      [ "lcIdentifier", "$$ = [ $1 ];" ],
+      [ "lambdaParamList , lcIdentifier", "$$ = $1.concat([ $3 ]);" ]
+    ],
+  
+/* ----------------------------------------------------------------------
+   Case expressions
+   ---------------------------------------------------------------------- */
+
+    "caseExpr": [
+      [ "inlineExpr MATCH NEWLINE INDENT caseClauses OUTDENT", "$$ = new yy.CaseExpr($1, $5);" + loc(1, 6) ]
+    ],
+    
+    "caseClauses": [
+      [ "caseClause", "$$ = [ $1 ];" ],
+      [ "caseClauses caseClause", "$$ = $1.concat([ $2 ]);" ]
+    ],
+    
+    "caseClause": [
+      [ "CASE pattern DOUBLE_RIGHT_ARROW blockExpr", "$$ = new yy.CaseClause($2, $4);" + loc(1, 4) ],
+    ],
+    
+    "pattern": [
+      [ "ctorPattern", "$$ = $1;" ],
+      [ "literal", "$$ = new yy.LiteralPattern($1);" + loc(1) ],
+      [ "lcIdentifier", "$$ = new yy.VariablePattern($1);" + loc(1) ],
+      [ "wildcard", "$$ = new yy.WildcardPattern();" + loc(1) ]
+    ],
+
+    "ctorPattern": [
+      [ "ucIdentifier", "$$ = new yy.CtorPattern($1, []);" + loc(1) ],
+      [ "ucIdentifier ( ctorPatternArgs )", "$$ = new yy.CtorPattern($1, $3);" + loc(1, 4) ]
+    ],
+    
+    "ctorPatternArgs": [
+      [ "", "$$ = [];" ],
+      [ "ctorPatternArgList", "$$ = $1;" ]
+    ],
+    
+    "ctorPatternArgList": [
+      [ "pattern", "$$ = [ $1 ];" ],
+      [ "ctorPatternArgList , pattern", "$$ = $1.concat([ $3 ]);" ]
+    ],
+    
+    "wildcard": [
+      [ "_", "$$ = new yy.Wildcard();" + loc(1, 1) ]
+    ],
+
+/* ----------------------------------------------------------------------
+   Declarations
+   ---------------------------------------------------------------------- */
+
+    "decl": [
+      [ "funcDecl", "$$ = $1;" ],
+      [ "featureDecl", "$$ = $1;" ],
+      [ "classDecl", "$$ = $1;" ],
+      [ "valDecl", "$$ = $1;" ]
+    ],
+    
+/* ----------------------------------------------------------------------
+   Feature declaration
+   ---------------------------------------------------------------------- */
+
+    "featureDecl": [
+      [ "FEATURE ucIdentifier typeParam NEWLINE INDENT abstractMethodList OUTDENT",
+        "$$ = new yy.FeatureDecl($2, $3, $6);" + loc(1, 7) ]
+    ],
+    
+    "abstractMethodList": [
+      [ "", "$$ = [];" ],
+      [ "abstractMethodList abstractMethodDecl", "$$ = $1.concat([ $2 ]);" ]
+    ],
+    
+    "abstractMethodDecl": [
+      [ "methodIdentifier typeParams ( params ) returnTypeDecl NEWLINE",
+        "$$ = new yy.FunctionDecl($1, $2, $4, $6, null);" + loc(1, 7) ]
+    ],
+    
+/* ----------------------------------------------------------------------
+   Class declaration
+   ---------------------------------------------------------------------- */
+
+    "classDecl": [
+      [ "CLASS ucIdentifier typeParams extendsClause NEWLINE INDENT ctorList OUTDENT",
+        "$$ = new yy.ClassDecl($2, $3, $4, $7);" + loc(1, 8) ]
+    ],
+    
+    "typeParams": [
+      [ "", "$$ = [];" ],
+      [ "[ typeParamList ]", "$$ = $2;" ]
+    ],
+    
+    "typeParamList": [
+      [ "typeParam", "$$ = [ $1 ];" ],
+      [ "typeParamList , typeParam", "$$ = $1.concat([ $3 ]);" ]
+    ],
+    
+    "typeParam": [
+      [ "lcIdentifier typeParams typeBounds", "$$ = new yy.TypeParam($1, $2, $3);" + loc(1, 3) ]
+    ],
+    
+    "typeBounds": [
+      [ "", "$$ = [];" ],
+      [ "IS classRef", "$$ = [ $2 ];" ],
+      [ "IS ( classList )", "$$ = $3;" ]
+    ],
+    
+    "extendsClause": [
+      [ "", "$$ = [];" ],
+      [ "IS classList", "$$ = $2;" ]
+    ],
+    
+    "classList": [
+      [ "classRef", "$$ = [ $1 ];" ],
+      [ "classList , classRef", "$$ = $1.concat([ $3 ]);" ]
+    ],
+    
+    /*
+    "typeParams": [
+      [ "", "$$ = [];" ],
+      [ "[ typeParamList ]", "$$ = $1;" ]
+    ],
+    
+    "typeParamList": [
+      [ "typeParam", "$$ = [ $1 ]; " ],
+      [ "typeParamList typeParam", "$$ = $1.concat([ $2 ]);" ]
+    ],
+    
+    "typeParam": [
+      [ "lcIdentifier", "$$ = new yy.TypeParam($1);" + loc(1) ]
+    ],
+    */
+   
+    "ctorList": [
+      [ "", "$$ = [];" ],
+      [ "ctorList ctorDecl", "$$ = $1.concat([ $2 ]);" ]
+    ],
+    
+    "ctorDecl": [
+      [ "ucIdentifier NEWLINE methodList", "$$ = new yy.CtorDecl($1, [], $3);" + loc(1, 3) ],
+      [ "ucIdentifier ( propertyList ) NEWLINE methodList", "$$ = new yy.CtorDecl($1, $3, $6);" + loc(1, 6) ]
+    ],
+    
+    "propertyList": [
+      [ "property", "$$ = [ $1 ];" ],
+      [ "propertyList , property", "$$ = $1.concat([ $3 ]);" ]
+    ],
+    
+    "property": [
+      [ "lcIdentifier", "$$ = new yy.Property($1, null);" + loc(1) ],
+      [ "lcIdentifier : typeRef", "$$ = new yy.Property($1, $3);" + loc(1, 3) ]
+    ],
+    
+    "methodList": [
+      [ "", "$$ = [];" ],
+      [ "methodList methodDecl", "$$ = $1.concat([ $2 ]);" ]
+    ],
+    
+    "methodDecl": [
+      [ "methodIdentifier typeParams ( params ) returnTypeDecl = blockExpr",
+        "$$ = new yy.FunctionDecl($1, $2, $4, $6, $8);" + loc(1, 8) ]
+    ],
+    
+/* ----------------------------------------------------------------------
+   Method declaration
+   ---------------------------------------------------------------------- */
+/*
+    "methodDecl": [
+      [ "DEF lcIdentifier ( params ) = expr", "$$ = new yy.MethodDecl($4, $6, $9);" + loc(1, 9) ]
+    ],
+    
+    "classRef": [
+      [ "ucIdentifier typeParams" ]
+    ],
+*/
+/* ----------------------------------------------------------------------
+   Function declaration
+   ---------------------------------------------------------------------- */
+
+    "funcDecl": [
+      [ "DEF lcIdentifier typeParams ( params ) returnTypeDecl NEWLINE",
+        "$$ = new yy.FunctionDecl($2, $3, $5, $7, null);" + loc(1, 8) ],
+      [ "DEF lcIdentifier typeParams ( params ) returnTypeDecl = blockExpr",
+        "$$ = new yy.FunctionDecl($2, $3, $5, $7, $9);" + loc(1, 9) ]
+    ],
+    
+    "params": [
+      [ "", "$$ = [];" ],
+      [ "paramList", "$$ = $1;" ],
+    ],
+    
+    "paramList": [
+      [ "param", "$$ = [ $1 ];" ],
+      [ "paramList , param", "$$ = $1.concat([ $3 ]);" ]
+    ],
+    
+    "param": [
+      [ "lcIdentifier", "$$ = new yy.Param($1, null);" + loc(1) ],
+      [ "lcIdentifier : typeRef", "$$ = new yy.Param($1, $3);" + loc(1, 3) ]
+    ],
+    
+    "returnTypeDecl": [
+      [ "", "$$ = null;" ],
+      [ "RIGHT_ARROW typeRef", "$$ = $2;" ]
+    ],
+    
+/* ----------------------------------------------------------------------
+   Value declaration
+   ---------------------------------------------------------------------- */
+
+    "valDecl": [
+      [ "VAL lcIdentifier = blockExpr", "$$ = new yy.ValDecl($2, $4);" + loc(1, 4) ]
+    ],
+    
+/* ----------------------------------------------------------------------
+   Reference
+   ---------------------------------------------------------------------- */
+
+    "ref": [
+      [ "lcIdentifier", "$$ = new yy.Ref($1);" + loc(1) ]
+    ],
+    
+/* ----------------------------------------------------------------------
+   Constructor declaration
+   ---------------------------------------------------------------------- */
+
+/*    "dataDecl": [
+      [ "DATA ucIdentifier typeParams = ctorDecls NEWLINE", "$$ = new yy.DataDecl($2, $3, $5);" + loc(1, 6) ]
+    ],
+    
+    "typeParams": [
+      [ "", "$$ = [];" ],
+      [ "typeParams typeParam", "$$ = $1.concat([ $2 ]);" ]
+    ],
+    
+    "typeParam": [
+      [ "lcIdentifier", "$$ = new yy.TypeParam($1);" + loc(1) ]
+    ],
+    
+    "ctorDecls": [
+      [ "ctorDecl", "$$ = [ $1 ];" ],
+      [ "ctorDecls | ctorDecl", "$$ = $1.concat([ $3 ]);" ]
+    ],
+    
+    "ctorDecl": [
+      [ "ucIdentifier ctorParams", "$$ = new yy.CtorDecl($1, $2);" + loc(1, 2) ]
+    ],
+    
+    "ctorParams": [
+      [ "", "$$ = [];" ],
+      [ "ctorParams ctorParam", "$$ = $1.concat([ $2 ]);" ]
+    ],
+    
+    "ctorParam": [
+      [ "typeParamRef", "$$ = $1;" ],
+      [ "ucIdentifier", "$$ = new yy.TypeRef($1, []);" + loc(1) ],
+      [ "( ucIdentifier typeRefArgs )", "$$ = new yy.TypeRef($2, $3);" + loc(1, 4) ]
+    ],
+    
+    "typeParamRef": [
+      [ "lcIdentifier", "$$ = new yy.TypeParamRef($1);" + loc(1) ]
+    ],
+    */
+/* ----------------------------------------------------------------------
+   Type reference
+   ---------------------------------------------------------------------- */
+
+    "typeRef": [
+      [ "atomicTypeRef", "$$ = $1;" ],
+      [ "funcTypeRef", "$$ = $1; "]
+    ],
+    
+    "atomicTypeRef": [
+      [ "classRef", "$$ = $1;" ],
+      [ "wildcard", "$$ = new yy.WildcardTypeRef($1);" + loc(1) ]
+    ],
+    
+    "classRef": [
+      [ "identifier typeArgs", "$$ = new yy.ClassRef($1, $2);" + loc(1, 2) ]
+    ],
+    
+    "typeArgs": [
+      [ "", "$$ = [];" ],
+      [ "[ typeRefList ]", "$$ = $2;" ]
+    ],
+    
+    "funcTypeRef": [
+      [ "atomicTypeRef RIGHT_ARROW funcResultTypeRef", "$$ = new yy.FunctionTypeRef([ $1 ], $3);" + loc(1, 3) ],
+      [ "( funcParamTypeRefList ) RIGHT_ARROW funcResultTypeRef", "$$ = new yy.FunctionTypeRef($2, $5);" + loc(1, 5) ]
+    ],
+    
+    "funcParamTypeRefList": [
+      [ "", "$$ = [];" ],
+      [ "funcParamTypeRefList , typeRef", "$$ = $1.concat([ $3 ]);" ]
+    ],
+    
+    "funcResultTypeRef": [
+      [ "atomicTypeRef", "$$ = $1;" ],
+      [ "( funcTypeRef )", "$$ = $2;" ]
+    ],
+    
+    "typeRefs": [
+      [ "", "$$ = [];" ],
+      [ "[ typeRefList ]", "$$ = $2;" ]
+    ],
+    
+    "typeRefList": [
+      [ "typeRef", "$$ = [ $1 ];" ],
+      [ "typeRefList , typeRef", "$$ = $1.concat([ $3 ]);" ]
+      ]
+      
+  }
+};
+
+Maxime.scope.__maxime__compiler__Parser = function () {
+  var __maxime__compiler__Parser = {};
+  __maxime__compiler__Parser._Parser = {
+    _Parser: function () {
+      var _Parser = function () {
+        this._constructor = 'Parser';
+        this._properties = [];
+      };
+      _Parser.prototype._parse = function (_source) {
+        var that = this;
+        
+        var
+          Parser = require("jison").Parser,
+          sprintf = require('sprintf');
+        
+        var parser = new Parser(maximeGrammar);
+        parser.lexer = require('../lib/lexer');
+        
+        var yy = {};
+        
+        yy.start = function(file) {
+          this.src.file = file;
+        };
+        
+        yy.src = {};
+        
+        yy.src.loc = function(firstToken, lastToken) {
+          return new yy.src.SourceLocation(
+            new yy.src.Position(firstToken.first_line, firstToken.first_column),
+            new yy.src.Position(lastToken.last_line, lastToken.last_column));
+        };
+        
+        yy.src.SourceLocation = function(file, start, end) {
+          this.file = yy.src.file;
+          this.start = start;
+          this.end = end;
+        };
+        
+        yy.src.Position = function(line, column) {
+          this.line = line;
+          this.column = column;
+        };
+        
+        parser.yy = yy;
+        
+        var
+          code = EcmaScript.max2js(_source._code),
+          src = EcmaScript.max2js(_source._file._path._segments).join('/');
+        console.log('\n----\nParsing file ' + src);
+        parser.yy.start(src);
+        return parser.parse(code + '\n');
+      };
+      return _Parser;
+    }()
+  };
+  return __maxime__compiler__Parser;
+} ();
+
 var EcmaScript = {};
 
 var
+  _ = require('lodash'),
   fs = require('fs'),
   filesystem = require('../lib/filesystem');
 
@@ -166,12 +727,45 @@ EcmaScript.array2list = function(a) {
     return new Maxime.scope.__maxime__List._List._Nil();
   }
   else {
-    return new Maxime.scope.__maxime__List._List._Cons(a[0], EcmaScript.array2list(a.slice(1)));
+    return new Maxime.scope.__maxime__List._List._Cons(
+      EcmaScript.js2max(a[0]),
+      EcmaScript.array2list(a.slice(1))
+    );
   }
 };
 
-EcmaScript.mkString = function(s) {
-  return new Maxime.scope.__maxime__String._String._String(s);
+EcmaScript.js2max = function(x) {
+  if (typeof x._constructor === 'string') {
+    return x;
+  }
+  if (_.isArray(x)) {
+    return EcmaScript.array2list(x);
+  }
+  if (typeof x === 'string') {
+    return new Maxime.scope.__maxime__String._String._String(x);
+  }
+  if (typeof x === 'number') {
+    return new Maxime.scope.__maxime__Num._Num._Num(x);
+  }
+  if (typeof x === 'boolean') {
+    return x
+      ? new Maxime.scope.__maxime__Bool._Bool._True()
+      : new Maxime.scope.__maxime__Bool._Bool._False();
+  }
+  throw new Error(JSON.stringify(x));
+};
+
+EcmaScript.max2js = function(x) {
+  if (x.constructor === Maxime.scope.__maxime__List._List._Cons) {
+    return [ EcmaScript.max2js(x._headElem) ].concat(EcmaScript.max2js(x._tailList));
+  }
+  if (x.constructor === Maxime.scope.__maxime__List._List._Nil) {
+    return [];
+  }
+  if (x.constructor === Maxime.scope.__maxime__String._String._String) {
+    return x._s;
+  }
+  throw new Error(JSON.stringify(x));
 };
 
 function toJson(o) {
@@ -207,19 +801,31 @@ Maxime.scope.__maxime__io__FileSystem = function () {
         this._constructor = 'Path';
         this._properties = [];
       };
-      _FileSystem.prototype._findFiles = function (_path, _regexp) {
+      
+      function path2string(path) {
+        return EcmaScript.max2js(path._segments).join('/');
+      }
+      
+      _FileSystem.prototype._findFiles = function (_file, _regexp) {
         var that = this;
         var
           fs = require('fs'),
-          filesystem = require('../lib/filesystem'),
-          EcmaScript = require('./EcmaScript');
-        
-        var path = EcmaScript.list2array(_path).join('/');
-        var files = filesystem.findFiles(path, _regexp._s).map(function(f) {
-          return EcmaScript.mkString(f);
+          filesystem = require('../lib/filesystem');
+        var path = path2string(_file._path);
+        var files = filesystem.findFiles(path, _regexp._pattern).map(function(f) {
+          var segments = EcmaScript.js2max(f.split(/\//));
+          var path = new Maxime.scope.__maxime__io__Path._Path._Path(segments, EcmaScript.js2max(true));
+          return new Maxime.scope.__maxime__io__File._File._File(path);
         });
-        return EcmaScript.array2list(files);
+        return EcmaScript.js2max(files);
       };
+      
+      _FileSystem.prototype._read = function(_file) {
+        var that = this;
+        var path = path2string(_file._path);
+        return EcmaScript.js2max(fs.readFileSync(path, 'utf8'));
+      };
+      
       return _FileSystem;
     }()
   };
@@ -412,6 +1018,20 @@ Maxime.scope.__maxime__compiler__ast__BinaryExpr = function () {
   };
   return __maxime__compiler__ast__BinaryExpr;
 }();
+Maxime.scope.__maxime__compiler__ast__Module = function () {
+  var __maxime__compiler__ast__Module = {};
+  __maxime__compiler__ast__Module._Module = {
+    _Module: function () {
+      var _Module = function (_loc) {
+        this._constructor = 'Module';
+        this._properties = [this._loc];
+        this._loc = _loc;
+      };
+      return _Module;
+    }()
+  };
+  return __maxime__compiler__ast__Module;
+}();
 Maxime.scope.__maxime__compiler__Compiler = function () {
   var __maxime__compiler__Compiler = {};
   __maxime__compiler__Compiler._Compiler = {
@@ -430,69 +1050,52 @@ Maxime.scope.__maxime__compiler__Compiler = function () {
             return _s;
           }
           new Maxime.scope.__maxime__String._String._String('Compiling ').__plus_(_sources._join(_id, new Maxime.scope.__maxime__String._String._String(', '))).__plus_(new Maxime.scope.__maxime__String._String._String(' to ')).__plus_(_target)._println();
+          function _mkFile(_s) {
+            return new Maxime.scope.__maxime__io__File._File._File(new Maxime.scope.__maxime__io__Path._Path._Path(_s._split(new Maxime.scope.__maxime__String._String._String('/')), new Maxime.scope.__maxime__Bool._Bool._True()));
+          }
+          var _sourceDirs = _sources._map(_mkFile);
           var _CompilationUnit = {
               _CompilationUnit: function () {
-                var _CompilationUnit = function (_path, _maxFiles, _jsFiles) {
+                var _CompilationUnit = function (_root, _maxFiles, _jsFiles) {
                   this._constructor = 'CompilationUnit';
                   this._properties = [
-                    this._path,
+                    this._root,
                     this._maxFiles,
                     this._jsFiles
                   ];
-                  this._path = _path;
+                  this._root = _root;
                   this._maxFiles = _maxFiles;
                   this._jsFiles = _jsFiles;
                 };
                 _CompilationUnit.prototype._toString = function () {
                   var that = this;
-                  return that._path;
+                  return that._root;
                 };
                 return _CompilationUnit;
               }()
             };
-          function _mkCompilationUnit(_path) {
+          function _mkCompilationUnit(_root) {
             return function () {
-              var _maxFiles = new Maxime.scope.__maxime__io__FileSystem._FileSystem._FileSystem()._findFiles(_path, new Maxime.scope.__maxime__RegExp._RegExp._RegExp(new Maxime.scope.__maxime__String._String._String('\\.max$'), new Maxime.scope.__maxime__String._String._String('')));
-              var _jsFiles = new Maxime.scope.__maxime__io__FileSystem._FileSystem._FileSystem()._findFiles(_path, new Maxime.scope.__maxime__RegExp._RegExp._RegExp(new Maxime.scope.__maxime__String._String._String('\\.js$'), new Maxime.scope.__maxime__String._String._String('')));
-              return new _CompilationUnit._CompilationUnit(_path, _maxFiles, _jsFiles);
+              var _maxFiles = new Maxime.scope.__maxime__io__FileSystem._FileSystem._FileSystem()._findFiles(_root, new Maxime.scope.__maxime__RegExp._RegExp._RegExp(new Maxime.scope.__maxime__String._String._String('\\.max$'), new Maxime.scope.__maxime__String._String._String('')));
+              var _jsFiles = new Maxime.scope.__maxime__io__FileSystem._FileSystem._FileSystem()._findFiles(_root, new Maxime.scope.__maxime__RegExp._RegExp._RegExp(new Maxime.scope.__maxime__String._String._String('\\.js$'), new Maxime.scope.__maxime__String._String._String('')));
+              return new _CompilationUnit._CompilationUnit(_root, _maxFiles, _jsFiles);
             }();
           }
-          var _compilationUnits = _sources._map(_mkCompilationUnit);
+          var _compilationUnits = _sourceDirs._map(_mkCompilationUnit);
           new Maxime.scope.__maxime__String._String._String('Compilation units: ').__plus_(_compilationUnits._map(_toString)._join(_id, new Maxime.scope.__maxime__String._String._String(',')))._println();
           function _compileUnit(_unit) {
             return function () {
-              var _Source = {
-                  _Source: function () {
-                    var _Source = function (_code, _file) {
-                      this._constructor = 'Source';
-                      this._properties = [
-                        this._code,
-                        this._file
-                      ];
-                      this._code = _code;
-                      this._file = _file;
-                    };
-                    _Source.prototype._toString = function () {
-                      var that = this;
-                      return that._file._toString();
-                    };
-                    return _Source;
-                  }()
-                };
               function _readSource(_file) {
-                return new _Source._Source(new Maxime.scope.__maxime__io__File._File._File(_unit._path.__plus_(new Maxime.scope.__maxime__String._String._String('/')).__plus_(_file))._read(), _file);
-              }
-              function _parse(_source) {
-                return _source;
+                return new Maxime.scope.__maxime__compiler__Source._Source._Source(new Maxime.scope.__maxime__io__FileSystem._FileSystem._FileSystem()._read(new Maxime.scope.__maxime__io__File._File._File(_unit._root._path.__slash_(_file._path))), _file);
               }
               function _generate(_source) {
                 return _source;
               }
               function _compileSource(_source) {
                 return function () {
-                  var _moduleName = _source._file._path._segments._join(_id, new Maxime.scope.__maxime__String._String._String('.'));
+                  var _moduleName = _source._file._path._segments._join(_id, new Maxime.scope.__maxime__String._String._String('.'))._replace(new Maxime.scope.__maxime__String._String._String('\\.max$'), new Maxime.scope.__maxime__String._String._String(''));
                   new Maxime.scope.__maxime__String._String._String('Compiling module ').__plus_(_moduleName)._println();
-                  var _ast = _parse(_source);
+                  var _ast = new Maxime.scope.__maxime__compiler__Parser._Parser._Parser()._parse(_source);
                   return _generate(_ast);
                 }();
               }
@@ -514,14 +1117,57 @@ Maxime.scope.__maxime__compiler__Compiler = function () {
     }()
   };
   __maxime__compiler__Compiler._compile = function (_sources, _target, _options) {
-    return function () {
-      function _mkString(_s) {
-        return new Maxime.scope.__maxime__String._String._String(_s);
-      }
-      return new Maxime.scope.__maxime__compiler__Compiler._Compiler._Compiler()._compile(_sources._map(_mkString), _target, _options);
-    }();
+    return new Maxime.scope.__maxime__compiler__Compiler._Compiler._Compiler()._compile(_sources, _target, _options);
   };
   return __maxime__compiler__Compiler;
+}();
+Maxime.scope.__maxime__compiler__Location = function () {
+  var __maxime__compiler__Location = {};
+  __maxime__compiler__Location._Location = {
+    _Location: function () {
+      var _Location = function () {
+        this._constructor = 'Location';
+        this._properties = [];
+      };
+      return _Location;
+    }()
+  };
+  return __maxime__compiler__Location;
+}();
+Maxime.scope.__maxime__compiler__Source = function () {
+  var __maxime__compiler__Source = {};
+  __maxime__compiler__Source._Source = {
+    _Source: function () {
+      var _Source = function (_code, _file) {
+        this._constructor = 'Source';
+        this._properties = [
+          this._code,
+          this._file
+        ];
+        this._code = _code;
+        this._file = _file;
+      };
+      _Source.prototype._toString = function () {
+        var that = this;
+        return that._file._toString();
+      };
+      return _Source;
+    }()
+  };
+  return __maxime__compiler__Source;
+}();
+Maxime.scope.__maxime__compiler__Tree = function () {
+  var __maxime__compiler__Tree = {};
+  __maxime__compiler__Tree._Tree = {
+    _Tree: function () {
+      var _Tree = function () {
+        this._constructor = 'Tree';
+        this._properties = [];
+      };
+      return _Tree;
+    }()
+  };
+  return __maxime__compiler__Tree;
 }();
 Maxime.scope.__maxime__ecmascript__ast = function () {
   var __maxime__ecmascript__ast = {};
@@ -569,10 +1215,6 @@ Maxime.scope.__maxime__io__File = function () {
         this._properties = [this._path];
         this._path = _path;
       };
-      _File.prototype._read = function () {
-        var that = this;
-        return new Maxime.scope.__maxime__String._String._String('');
-      };
       _File.prototype._toString = function () {
         var that = this;
         return that._path._toString();
@@ -581,23 +1223,6 @@ Maxime.scope.__maxime__io__File = function () {
     }()
   };
   return __maxime__io__File;
-}();
-Maxime.scope.__maxime__io__FileSystem = function () {
-  var __maxime__io__FileSystem = {};
-  __maxime__io__FileSystem._FileSystem = {
-    _FileSystem: function () {
-      var _FileSystem = function () {
-        this._constructor = 'FileSystem';
-        this._properties = [];
-      };
-      _FileSystem.prototype._findFiles = function (_root, _regex) {
-        var that = this;
-        return new Maxime.scope.__maxime__List._List._Nil();
-      };
-      return _FileSystem;
-    }()
-  };
-  return __maxime__io__FileSystem;
 }();
 Maxime.scope.__maxime__io__Path = function () {
   var __maxime__io__Path = {};
@@ -620,6 +1245,10 @@ Maxime.scope.__maxime__io__Path = function () {
           }
           return that._segments._join(_id, new Maxime.scope.__maxime__String._String._String('/'));
         }();
+      };
+      _Path.prototype.__slash_ = function (_p) {
+        var that = this;
+        return new Maxime.scope.__maxime__io__Path._Path._Path(that._segments.__plus__plus_(_p._segments), that._absolute);
       };
       return _Path;
     }()
@@ -890,13 +1519,13 @@ Maxime.scope.__maxime__RegExp = function () {
   var __maxime__RegExp = {};
   __maxime__RegExp._RegExp = {
     _RegExp: function () {
-      var _RegExp = function (_s, _modifiers) {
+      var _RegExp = function (_pattern, _modifiers) {
         this._constructor = 'RegExp';
         this._properties = [
-          this._s,
+          this._pattern,
           this._modifiers
         ];
-        this._s = _s;
+        this._pattern = _pattern;
         this._modifiers = _modifiers;
       };
       return _RegExp;
@@ -924,6 +1553,10 @@ Maxime.scope.__maxime__String = function () {
       _String.prototype._replace = function (_regex, _replacement) {
         var that = this;
         return new Maxime.scope.__maxime__String._String._String(this._s.replace(new RegExp(_regex._s, 'g'), _replacement._s));
+      };
+      _String.prototype._split = function (_s) {
+        var that = this;
+        return EcmaScript.js2max(this._s.split(_s));
       };
       return _String;
     }()
@@ -1029,4 +1662,4 @@ Maxime.scope.__svg = function () {
   };
   return __svg;
 }();
-/*console.log(Maxime.scope);*/ module.exports = function(sources, target, options) { Maxime.scope.__maxime__compiler__Compiler._compile(EcmaScript.array2list(sources), EcmaScript.mkString(target), options); };
+/*console.log(Maxime.scope);*/ module.exports = function(sources, target, options) { Maxime.scope.__maxime__compiler__Compiler._compile(EcmaScript.js2max(sources), EcmaScript.js2max(target), options); };

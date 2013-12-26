@@ -5,4 +5,4 @@ class String
   +(s:String) → String = String(`this._s + _s._s`)
   println() → Void = `console.log(this._s)`
   replace(regex:String, replacement:String) → String = String(`this._s.replace(new RegExp(_regex._s, 'g'), _replacement._s)`)
-  split(s:String) → List[String] = 
+  split(s:String) → List[String] = `EcmaScript.js2max(this._s.split(_s))`

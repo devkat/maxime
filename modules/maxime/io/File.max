@@ -3,5 +3,4 @@ import maxime.io.Path
 
 class File is Printable
   File(path: Path)
-  read() → String = ""
   toString() → String = path.toString()

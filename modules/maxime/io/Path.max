@@ -6,3 +6,4 @@ class Path is Printable
   toString() → String =
     def id(s: String) → String = s
     segments.join(id, "/")
+  /(p:Path) → Path = Path(segments ++ p.segments, absolute)

@@ -1,4 +1,4 @@
 import maxime.String
 
 class RegExp
-  RegExp(s:String, modifiers:String)
+  RegExp(pattern:String, modifiers:String)

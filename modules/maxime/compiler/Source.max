@@ -1,0 +1,6 @@
+import maxime.Printable
+import maxime.io.File
+
+class Source is Printable
+  Source(code:String, file:File)
+  toString() → String = file.toString()

@@ -3,6 +3,8 @@ import maxime.Map
 import maxime.io.File
 import maxime.io.FileSystem
 import maxime.RegExp
+import maxime.compiler.Source
+import maxime.compiler.Parser
 
 class Compiler
   Compiler
@@ -12,41 +14,35 @@ class Compiler
     
     ("Compiling " + sources.join(id, ", ") + " to " + target).println()
     
-    def mkFile(s:String) → File = File(Path(s.split("/"), true))
+    def mkFile(s:String) → File = File(Path(s.split("/"), True))
     val sourceDirs = sources.map(mkFile)
     
     class CompilationUnit is Printable
-      CompilationUnit(path:String, maxFiles:List[String], jsFiles:List[String])
-      toString() → String = path
+      CompilationUnit(root: File, maxFiles:List[String], jsFiles:List[String])
+      toString() → String = root
     
     def mkCompilationUnit(root: File) -> CompilationUnit =
       val maxFiles = FileSystem.findFiles(root, RegExp("\.max$", ""))
       val jsFiles = FileSystem.findFiles(root, RegExp("\.js$", ""))
-      CompilationUnit(path, maxFiles, jsFiles)
+      CompilationUnit(root, maxFiles, jsFiles)
     
-    val compilationUnits = sources.map(mkCompilationUnit)
+    val compilationUnits = sourceDirs.map(mkCompilationUnit)
     ("Compilation units: " + compilationUnits.map(toString).join(id, ",")).println()
     
     def compileUnit(unit:CompilationUnit) → String =
-    
-      class Source is Printable
-        Source(code:String, file:File)
-        toString() → String = file.toString()
 
-      def readSource(file:String) → Source =
-        Source(File(unit.path + "/" + file).read(), file)
+      def readSource(file:File) → Source =
+        Source(FileSystem.read(File(unit.root.path / file.path)), file)
 
-      def parse(source:Source) → Source = source
       def generate(source:Source) → Source = source
 
       def compileSource(source:Source) → Source =
-        val moduleName = source.file.path.segments.join(id, ".") //.replace("\.max$", "")
+        val moduleName = source.file.path.segments.join(id, ".").replace("\.max$", "")
         ("Compiling module " + moduleName).println()
-        val ast = parse(source)
+        val ast = Parser.parse(source)
         generate(ast)
     
       def getCode(s:Source) -> String = s.code
-
       val jsSources = unit.jsFiles.map(readSource).map(getCode)
       val maxSources = unit.maxFiles.map(readSource)
       val maxTargets = maxSources.map(compileSource)
@@ -60,5 +56,4 @@ class Compiler
     code
 
 def compile(sources: List[File], target: File, options: Map[String, Any]) -> Void =
-  def mkString(s: String) -> String = String(s)
-  Compiler.compile(sources.map(mkString), target, options)
+  Compiler.compile(sources, target, options)
