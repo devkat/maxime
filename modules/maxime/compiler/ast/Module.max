@@ -1,4 +1,0 @@
-import maxime.compiler.Location
-
-class Module
-  Module(loc:Location)

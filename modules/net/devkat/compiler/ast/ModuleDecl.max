@@ -1,0 +1,4 @@
+import net.devkat.compiler.Location
+
+class ModuleDecl
+  ModuleDecl(loc:Location)

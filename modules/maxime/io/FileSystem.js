@@ -17,7 +17,7 @@ Maxime.scope.__maxime__io__FileSystem = function () {
           fs = require('fs'),
           filesystem = require('../lib/filesystem');
         var path = path2string(_file._path);
-        var files = filesystem.findFiles(path, _regexp._pattern).map(function(f) {
+        var files = filesystem.findFiles(path, new RegExp(_regexp._pattern._s)).map(function(f) {
           var segments = EcmaScript.js2max(f.split(/\//));
           var path = new Maxime.scope.__maxime__io__Path._Path._Path(segments, EcmaScript.js2max(true));
           return new Maxime.scope.__maxime__io__File._File._File(path);

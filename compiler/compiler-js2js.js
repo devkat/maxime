@@ -123,6 +123,123 @@ var Maxime = new MaximeCtor();
 })();
 
 
+var EcmaScript = {};
+
+var
+  _ = require('lodash'),
+  fs = require('fs'),
+  filesystem = require('../lib/filesystem');
+
+EcmaScript.array2list = function(a) {
+  if (a.length === 0) {
+    return new Maxime.scope.__maxime__List._List._Nil();
+  }
+  else {
+    return new Maxime.scope.__maxime__List._List._Cons(
+      EcmaScript.js2max(a[0]),
+      EcmaScript.array2list(a.slice(1))
+    );
+  }
+};
+
+EcmaScript.js2max = function(x) {
+  if (typeof x._constructor === 'string') {
+    return x;
+  }
+  if (_.isArray(x)) {
+    return EcmaScript.array2list(x);
+  }
+  if (typeof x === 'string') {
+    return new Maxime.scope.__maxime__String._String._String(x);
+  }
+  if (typeof x === 'number') {
+    return new Maxime.scope.__maxime__Num._Num._Num(x);
+  }
+  if (typeof x === 'boolean') {
+    return x
+      ? new Maxime.scope.__maxime__Bool._Bool._True()
+      : new Maxime.scope.__maxime__Bool._Bool._False();
+  }
+  throw new Error(JSON.stringify(x));
+};
+
+EcmaScript.max2js = function(x) {
+  if (x.constructor === Maxime.scope.__maxime__List._List._Cons) {
+    return [ EcmaScript.max2js(x._headElem) ].concat(EcmaScript.max2js(x._tailList));
+  }
+  if (x.constructor === Maxime.scope.__maxime__List._List._Nil) {
+    return [];
+  }
+  if (x.constructor === Maxime.scope.__maxime__String._String._String) {
+    return x._s;
+  }
+  throw new Error(JSON.stringify(x));
+};
+
+function toJson(o) {
+  return JSON.stringify(o);
+}
+
+function regexp(str, mod) {
+  return new RegExp(str, mod);
+}
+
+function readFile(p) {
+  return fs.readFileSync(p, 'utf-8');
+}
+
+function writeFile(p, content) {
+  fs.writeFileSync(p, content);
+}
+
+function replace(str, regex, rep) {
+  return str.replace(regex, rep);
+}
+
+function prop(obj, name) {
+  return obj[name];
+}
+
+module.exports = EcmaScript;
+Maxime.scope.__maxime__io__FileSystem = function () {
+  var __maxime__io__FileSystem = {};
+  __maxime__io__FileSystem._FileSystem = {
+    _FileSystem: function () {
+      var _FileSystem = function () {
+        this._constructor = 'Path';
+        this._properties = [];
+      };
+      
+      function path2string(path) {
+        return EcmaScript.max2js(path._segments).join('/');
+      }
+      
+      _FileSystem.prototype._findFiles = function (_file, _regexp) {
+        var that = this;
+        var
+          fs = require('fs'),
+          filesystem = require('../lib/filesystem');
+        var path = path2string(_file._path);
+        var files = filesystem.findFiles(path, new RegExp(_regexp._pattern._s)).map(function(f) {
+          var segments = EcmaScript.js2max(f.split(/\//));
+          var path = new Maxime.scope.__maxime__io__Path._Path._Path(segments, EcmaScript.js2max(true));
+          return new Maxime.scope.__maxime__io__File._File._File(path);
+        });
+        return EcmaScript.js2max(files);
+      };
+      
+      _FileSystem.prototype._read = function(_file) {
+        var that = this;
+        var path = path2string(_file._path);
+        return EcmaScript.js2max(fs.readFileSync(path, 'utf8'));
+      };
+      
+      return _FileSystem;
+    }()
+  };
+  return __maxime__io__FileSystem;
+}();
+
 var parser = require("../lib/parser");
 parser.lexer = require("../lib/lexer");
 parser.yy = require('../lib/nodes');
@@ -161,7 +278,7 @@ function loc(start, end) {
   var sprintf = require('sprintf');
   return sprintf("$$.loc = yy.src.loc(@%d, @%d);", start, end);
 }
-        
+
 var maximeGrammar = {
   "bnf": {
 
@@ -170,8 +287,8 @@ var maximeGrammar = {
    ---------------------------------------------------------------------- */
 
     "module": [
-      [ "statements EOF", "$$ = new yy.ModuleDecl($1);" + loc(1, 2) + "return $$;" ],
-      [ "NEWLINE statements EOF", "$$ = new yy.ModuleDecl($2);" + loc(1, 3) + "return $$;" ]
+      [ "statements EOF", "$$ = yy.ModuleDecl($1);" + loc(1, 2) + "return $$;" ],
+      [ "NEWLINE statements EOF", "$$ = yy.ModuleDecl($2);" + loc(1, 3) + "return $$;" ]
     ],
     
     "statements": [
@@ -335,7 +452,7 @@ var maximeGrammar = {
    ---------------------------------------------------------------------- */
   
     "lambdaExpr": [
-      [ "LAMBDA lambdaParams RIGHT_ARROW atomicExpr", "$$ = new yy.LambdaExpr($2, $4);" + loc(1, 4) ]
+      [ "LAMBDA lambdaParams RIGHT_ARROW atomicExpr", "$$ = new yy.FunctionExpr($2, $4);" + loc(1, 4) ]
     ],
     
     "lambdaParams": [
@@ -369,7 +486,7 @@ var maximeGrammar = {
       [ "ctorPattern", "$$ = $1;" ],
       [ "literal", "$$ = new yy.LiteralPattern($1);" + loc(1) ],
       [ "lcIdentifier", "$$ = new yy.VariablePattern($1);" + loc(1) ],
-      [ "wildcard", "$$ = new yy.WildcardPattern();" + loc(1) ]
+      [ "_", "$$ = new yy.WildcardPattern();" + loc(1) ]
     ],
 
     "ctorPattern": [
@@ -387,10 +504,6 @@ var maximeGrammar = {
       [ "ctorPatternArgList , pattern", "$$ = $1.concat([ $3 ]);" ]
     ],
     
-    "wildcard": [
-      [ "_", "$$ = new yy.Wildcard();" + loc(1, 1) ]
-    ],
-
 /* ----------------------------------------------------------------------
    Declarations
    ---------------------------------------------------------------------- */
@@ -657,9 +770,9 @@ var maximeGrammar = {
   }
 };
 
-Maxime.scope.__maxime__compiler__Parser = function () {
-  var __maxime__compiler__Parser = {};
-  __maxime__compiler__Parser._Parser = {
+Maxime.scope.__net__devkat__compiler__Parser = function () {
+  var __net__devkat__compiler__Parser = {};
+  __net__devkat__compiler__Parser._Parser = {
     _Parser: function () {
       var _Parser = function () {
         this._constructor = 'Parser';
@@ -700,6 +813,47 @@ Maxime.scope.__maxime__compiler__Parser = function () {
           this.column = column;
         };
         
+        [
+          'BinaryExpr',
+          'BlockExpr',
+          'CaseClause',
+          'CaseExpr',
+          'ClassDecl',
+          'ClassRef',
+          'CtorCall',
+          'CtorDecl',
+          'CtorPattern',
+          'FeatureDecl',
+          'FunctionCall',
+          'FunctionDecl',
+          'FunctionExpr',
+          'FunctionTypeRef',
+          'Identifier',
+          'ImportDecl',
+          'Literal',
+          'LiteralPattern',
+          'MethodCall',
+          'MethodDecl',
+          'ModuleDecl',
+          'NativeExpr',
+          'Param',
+          'Property',
+          'PropertyAccess',
+          'Ref',
+          'TypeParam',
+          'TypeParamRef',
+          'ValDecl',
+          'VariablePattern',
+          'WildcardPattern',
+          'WildcardTypeRef'
+        ].forEach(function(type) {
+          //yy[type] = function() {console.log(type, typeof Maxime.scope['__net__devkat__compiler__ast__' + type]['_' + type]['_' + type]);};
+          yy[type] = function() {
+            return new Maxime.scope['__net__devkat__compiler__ast__' + type]['_' + type]['_' + type]();
+          };
+        });
+        
+        
         parser.yy = yy;
         
         var
@@ -712,125 +866,8 @@ Maxime.scope.__maxime__compiler__Parser = function () {
       return _Parser;
     }()
   };
-  return __maxime__compiler__Parser;
+  return __net__devkat__compiler__Parser;
 } ();
-
-var EcmaScript = {};
-
-var
-  _ = require('lodash'),
-  fs = require('fs'),
-  filesystem = require('../lib/filesystem');
-
-EcmaScript.array2list = function(a) {
-  if (a.length === 0) {
-    return new Maxime.scope.__maxime__List._List._Nil();
-  }
-  else {
-    return new Maxime.scope.__maxime__List._List._Cons(
-      EcmaScript.js2max(a[0]),
-      EcmaScript.array2list(a.slice(1))
-    );
-  }
-};
-
-EcmaScript.js2max = function(x) {
-  if (typeof x._constructor === 'string') {
-    return x;
-  }
-  if (_.isArray(x)) {
-    return EcmaScript.array2list(x);
-  }
-  if (typeof x === 'string') {
-    return new Maxime.scope.__maxime__String._String._String(x);
-  }
-  if (typeof x === 'number') {
-    return new Maxime.scope.__maxime__Num._Num._Num(x);
-  }
-  if (typeof x === 'boolean') {
-    return x
-      ? new Maxime.scope.__maxime__Bool._Bool._True()
-      : new Maxime.scope.__maxime__Bool._Bool._False();
-  }
-  throw new Error(JSON.stringify(x));
-};
-
-EcmaScript.max2js = function(x) {
-  if (x.constructor === Maxime.scope.__maxime__List._List._Cons) {
-    return [ EcmaScript.max2js(x._headElem) ].concat(EcmaScript.max2js(x._tailList));
-  }
-  if (x.constructor === Maxime.scope.__maxime__List._List._Nil) {
-    return [];
-  }
-  if (x.constructor === Maxime.scope.__maxime__String._String._String) {
-    return x._s;
-  }
-  throw new Error(JSON.stringify(x));
-};
-
-function toJson(o) {
-  return JSON.stringify(o);
-}
-
-function regexp(str, mod) {
-  return new RegExp(str, mod);
-}
-
-function readFile(p) {
-  return fs.readFileSync(p, 'utf-8');
-}
-
-function writeFile(p, content) {
-  fs.writeFileSync(p, content);
-}
-
-function replace(str, regex, rep) {
-  return str.replace(regex, rep);
-}
-
-function prop(obj, name) {
-  return obj[name];
-}
-
-module.exports = EcmaScript;
-Maxime.scope.__maxime__io__FileSystem = function () {
-  var __maxime__io__FileSystem = {};
-  __maxime__io__FileSystem._FileSystem = {
-    _FileSystem: function () {
-      var _FileSystem = function () {
-        this._constructor = 'Path';
-        this._properties = [];
-      };
-      
-      function path2string(path) {
-        return EcmaScript.max2js(path._segments).join('/');
-      }
-      
-      _FileSystem.prototype._findFiles = function (_file, _regexp) {
-        var that = this;
-        var
-          fs = require('fs'),
-          filesystem = require('../lib/filesystem');
-        var path = path2string(_file._path);
-        var files = filesystem.findFiles(path, _regexp._pattern).map(function(f) {
-          var segments = EcmaScript.js2max(f.split(/\//));
-          var path = new Maxime.scope.__maxime__io__Path._Path._Path(segments, EcmaScript.js2max(true));
-          return new Maxime.scope.__maxime__io__File._File._File(path);
-        });
-        return EcmaScript.js2max(files);
-      };
-      
-      _FileSystem.prototype._read = function(_file) {
-        var that = this;
-        var path = path2string(_file._path);
-        return EcmaScript.js2max(fs.readFileSync(path, 'utf8'));
-      };
-      
-      return _FileSystem;
-    }()
-  };
-  return __maxime__io__FileSystem;
-}();
 
 Maxime.scope.__dom = function () {
   var __dom = {};
@@ -975,199 +1012,6 @@ Maxime.scope.__maxime__Bool = function () {
     }()
   };
   return __maxime__Bool;
-}();
-Maxime.scope.__maxime__compiler__ast__BinaryExpr = function () {
-  var __maxime__compiler__ast__BinaryExpr = {};
-  __maxime__compiler__ast__BinaryExpr._Expr = {
-    _Expr: function () {
-      var _Expr = function () {
-        this._constructor = 'Expr';
-        this._properties = [];
-      };
-      return _Expr;
-    }()
-  };
-  __maxime__compiler__ast__BinaryExpr._Operator = {
-    _Operator: function () {
-      var _Operator = function () {
-        this._constructor = 'Operator';
-        this._properties = [];
-      };
-      return _Operator;
-    }()
-  };
-  __maxime__compiler__ast__BinaryExpr._BinaryExpr = {
-    _BinaryExpr: function () {
-      var _BinaryExpr = function (_left, _operator, _right) {
-        this._constructor = 'BinaryExpr';
-        this._properties = [
-          this._left,
-          this._operator,
-          this._right
-        ];
-        this._left = _left;
-        this._operator = _operator;
-        this._right = _right;
-      };
-      _BinaryExpr.prototype._transcode = function () {
-        var that = this;
-        return new Maxime.scope.__maxime__String._String._String('');
-      };
-      return _BinaryExpr;
-    }()
-  };
-  return __maxime__compiler__ast__BinaryExpr;
-}();
-Maxime.scope.__maxime__compiler__ast__Module = function () {
-  var __maxime__compiler__ast__Module = {};
-  __maxime__compiler__ast__Module._Module = {
-    _Module: function () {
-      var _Module = function (_loc) {
-        this._constructor = 'Module';
-        this._properties = [this._loc];
-        this._loc = _loc;
-      };
-      return _Module;
-    }()
-  };
-  return __maxime__compiler__ast__Module;
-}();
-Maxime.scope.__maxime__compiler__Compiler = function () {
-  var __maxime__compiler__Compiler = {};
-  __maxime__compiler__Compiler._Compiler = {
-    _Compiler: function () {
-      var _Compiler = function () {
-        this._constructor = 'Compiler';
-        this._properties = [];
-      };
-      _Compiler.prototype._compile = function (_sources, _target, _options) {
-        var that = this;
-        return function () {
-          function _toString(_s) {
-            return _s._toString();
-          }
-          function _id(_s) {
-            return _s;
-          }
-          new Maxime.scope.__maxime__String._String._String('Compiling ').__plus_(_sources._join(_id, new Maxime.scope.__maxime__String._String._String(', '))).__plus_(new Maxime.scope.__maxime__String._String._String(' to ')).__plus_(_target)._println();
-          function _mkFile(_s) {
-            return new Maxime.scope.__maxime__io__File._File._File(new Maxime.scope.__maxime__io__Path._Path._Path(_s._split(new Maxime.scope.__maxime__String._String._String('/')), new Maxime.scope.__maxime__Bool._Bool._True()));
-          }
-          var _sourceDirs = _sources._map(_mkFile);
-          var _CompilationUnit = {
-              _CompilationUnit: function () {
-                var _CompilationUnit = function (_root, _maxFiles, _jsFiles) {
-                  this._constructor = 'CompilationUnit';
-                  this._properties = [
-                    this._root,
-                    this._maxFiles,
-                    this._jsFiles
-                  ];
-                  this._root = _root;
-                  this._maxFiles = _maxFiles;
-                  this._jsFiles = _jsFiles;
-                };
-                _CompilationUnit.prototype._toString = function () {
-                  var that = this;
-                  return that._root;
-                };
-                return _CompilationUnit;
-              }()
-            };
-          function _mkCompilationUnit(_root) {
-            return function () {
-              var _maxFiles = new Maxime.scope.__maxime__io__FileSystem._FileSystem._FileSystem()._findFiles(_root, new Maxime.scope.__maxime__RegExp._RegExp._RegExp(new Maxime.scope.__maxime__String._String._String('\\.max$'), new Maxime.scope.__maxime__String._String._String('')));
-              var _jsFiles = new Maxime.scope.__maxime__io__FileSystem._FileSystem._FileSystem()._findFiles(_root, new Maxime.scope.__maxime__RegExp._RegExp._RegExp(new Maxime.scope.__maxime__String._String._String('\\.js$'), new Maxime.scope.__maxime__String._String._String('')));
-              return new _CompilationUnit._CompilationUnit(_root, _maxFiles, _jsFiles);
-            }();
-          }
-          var _compilationUnits = _sourceDirs._map(_mkCompilationUnit);
-          new Maxime.scope.__maxime__String._String._String('Compilation units: ').__plus_(_compilationUnits._map(_toString)._join(_id, new Maxime.scope.__maxime__String._String._String(',')))._println();
-          function _compileUnit(_unit) {
-            return function () {
-              function _readSource(_file) {
-                return new Maxime.scope.__maxime__compiler__Source._Source._Source(new Maxime.scope.__maxime__io__FileSystem._FileSystem._FileSystem()._read(new Maxime.scope.__maxime__io__File._File._File(_unit._root._path.__slash_(_file._path))), _file);
-              }
-              function _generate(_source) {
-                return _source;
-              }
-              function _compileSource(_source) {
-                return function () {
-                  var _moduleName = _source._file._path._segments._join(_id, new Maxime.scope.__maxime__String._String._String('.'))._replace(new Maxime.scope.__maxime__String._String._String('\\.max$'), new Maxime.scope.__maxime__String._String._String(''));
-                  new Maxime.scope.__maxime__String._String._String('Compiling module ').__plus_(_moduleName)._println();
-                  var _ast = new Maxime.scope.__maxime__compiler__Parser._Parser._Parser()._parse(_source);
-                  return _generate(_ast);
-                }();
-              }
-              function _getCode(_s) {
-                return _s._code;
-              }
-              var _jsSources = _unit._jsFiles._map(_readSource)._map(_getCode);
-              var _maxSources = _unit._maxFiles._map(_readSource);
-              var _maxTargets = _maxSources._map(_compileSource);
-              return _jsSources.__plus__plus_(_maxTargets._map(_toString))._join(_id, new Maxime.scope.__maxime__String._String._String('\n'));
-            }();
-          }
-          var _codes = _compilationUnits._map(_compileUnit);
-          var _code = _codes._join(_id, new Maxime.scope.__maxime__String._String._String('\\n'));
-          return _code;
-        }();
-      };
-      return _Compiler;
-    }()
-  };
-  __maxime__compiler__Compiler._compile = function (_sources, _target, _options) {
-    return new Maxime.scope.__maxime__compiler__Compiler._Compiler._Compiler()._compile(_sources, _target, _options);
-  };
-  return __maxime__compiler__Compiler;
-}();
-Maxime.scope.__maxime__compiler__Location = function () {
-  var __maxime__compiler__Location = {};
-  __maxime__compiler__Location._Location = {
-    _Location: function () {
-      var _Location = function () {
-        this._constructor = 'Location';
-        this._properties = [];
-      };
-      return _Location;
-    }()
-  };
-  return __maxime__compiler__Location;
-}();
-Maxime.scope.__maxime__compiler__Source = function () {
-  var __maxime__compiler__Source = {};
-  __maxime__compiler__Source._Source = {
-    _Source: function () {
-      var _Source = function (_code, _file) {
-        this._constructor = 'Source';
-        this._properties = [
-          this._code,
-          this._file
-        ];
-        this._code = _code;
-        this._file = _file;
-      };
-      _Source.prototype._toString = function () {
-        var that = this;
-        return that._file._toString();
-      };
-      return _Source;
-    }()
-  };
-  return __maxime__compiler__Source;
-}();
-Maxime.scope.__maxime__compiler__Tree = function () {
-  var __maxime__compiler__Tree = {};
-  __maxime__compiler__Tree._Tree = {
-    _Tree: function () {
-      var _Tree = function () {
-        this._constructor = 'Tree';
-        this._properties = [];
-      };
-      return _Tree;
-    }()
-  };
-  return __maxime__compiler__Tree;
 }();
 Maxime.scope.__maxime__ecmascript__ast = function () {
   var __maxime__ecmascript__ast = {};
@@ -1594,6 +1438,589 @@ Maxime.scope.__maxime__Void = function () {
   };
   return __maxime__Void;
 }();
+Maxime.scope.__net__devkat__compiler__ast__BinaryExpr = function () {
+  var __net__devkat__compiler__ast__BinaryExpr = {};
+  __net__devkat__compiler__ast__BinaryExpr._Expr = {
+    _Expr: function () {
+      var _Expr = function () {
+        this._constructor = 'Expr';
+        this._properties = [];
+      };
+      return _Expr;
+    }()
+  };
+  __net__devkat__compiler__ast__BinaryExpr._Operator = {
+    _Operator: function () {
+      var _Operator = function () {
+        this._constructor = 'Operator';
+        this._properties = [];
+      };
+      return _Operator;
+    }()
+  };
+  __net__devkat__compiler__ast__BinaryExpr._BinaryExpr = {
+    _BinaryExpr: function () {
+      var _BinaryExpr = function (_left, _operator, _right) {
+        this._constructor = 'BinaryExpr';
+        this._properties = [
+          this._left,
+          this._operator,
+          this._right
+        ];
+        this._left = _left;
+        this._operator = _operator;
+        this._right = _right;
+      };
+      _BinaryExpr.prototype._transcode = function () {
+        var that = this;
+        return new Maxime.scope.__maxime__String._String._String('');
+      };
+      return _BinaryExpr;
+    }()
+  };
+  return __net__devkat__compiler__ast__BinaryExpr;
+}();
+Maxime.scope.__net__devkat__compiler__ast__BlockExpr = function () {
+  var __net__devkat__compiler__ast__BlockExpr = {};
+  __net__devkat__compiler__ast__BlockExpr._BlockExpr = {
+    _BlockExpr: function () {
+      var _BlockExpr = function () {
+        this._constructor = 'BlockExpr';
+        this._properties = [];
+      };
+      return _BlockExpr;
+    }()
+  };
+  return __net__devkat__compiler__ast__BlockExpr;
+}();
+Maxime.scope.__net__devkat__compiler__ast__CaseClause = function () {
+  var __net__devkat__compiler__ast__CaseClause = {};
+  __net__devkat__compiler__ast__CaseClause._CaseClause = {
+    _CaseClause: function () {
+      var _CaseClause = function () {
+        this._constructor = 'CaseClause';
+        this._properties = [];
+      };
+      return _CaseClause;
+    }()
+  };
+  return __net__devkat__compiler__ast__CaseClause;
+}();
+Maxime.scope.__net__devkat__compiler__ast__CaseExpr = function () {
+  var __net__devkat__compiler__ast__CaseExpr = {};
+  __net__devkat__compiler__ast__CaseExpr._CaseExpr = {
+    _CaseExpr: function () {
+      var _CaseExpr = function () {
+        this._constructor = 'CaseExpr';
+        this._properties = [];
+      };
+      return _CaseExpr;
+    }()
+  };
+  return __net__devkat__compiler__ast__CaseExpr;
+}();
+Maxime.scope.__net__devkat__compiler__ast__ClassDecl = function () {
+  var __net__devkat__compiler__ast__ClassDecl = {};
+  __net__devkat__compiler__ast__ClassDecl._ClassDecl = {
+    _ClassDecl: function () {
+      var _ClassDecl = function () {
+        this._constructor = 'ClassDecl';
+        this._properties = [];
+      };
+      return _ClassDecl;
+    }()
+  };
+  return __net__devkat__compiler__ast__ClassDecl;
+}();
+Maxime.scope.__net__devkat__compiler__ast__ClassRef = function () {
+  var __net__devkat__compiler__ast__ClassRef = {};
+  __net__devkat__compiler__ast__ClassRef._ClassRef = {
+    _ClassRef: function () {
+      var _ClassRef = function () {
+        this._constructor = 'ClassRef';
+        this._properties = [];
+      };
+      return _ClassRef;
+    }()
+  };
+  return __net__devkat__compiler__ast__ClassRef;
+}();
+Maxime.scope.__net__devkat__compiler__ast__CtorCall = function () {
+  var __net__devkat__compiler__ast__CtorCall = {};
+  __net__devkat__compiler__ast__CtorCall._CtorCall = {
+    _CtorCall: function () {
+      var _CtorCall = function () {
+        this._constructor = 'CtorCall';
+        this._properties = [];
+      };
+      return _CtorCall;
+    }()
+  };
+  return __net__devkat__compiler__ast__CtorCall;
+}();
+Maxime.scope.__net__devkat__compiler__ast__CtorDecl = function () {
+  var __net__devkat__compiler__ast__CtorDecl = {};
+  __net__devkat__compiler__ast__CtorDecl._CtorDecl = {
+    _CtorDecl: function () {
+      var _CtorDecl = function () {
+        this._constructor = 'CtorDecl';
+        this._properties = [];
+      };
+      return _CtorDecl;
+    }()
+  };
+  return __net__devkat__compiler__ast__CtorDecl;
+}();
+Maxime.scope.__net__devkat__compiler__ast__CtorPattern = function () {
+  var __net__devkat__compiler__ast__CtorPattern = {};
+  __net__devkat__compiler__ast__CtorPattern._CtorPattern = {
+    _CtorPattern: function () {
+      var _CtorPattern = function () {
+        this._constructor = 'CtorPattern';
+        this._properties = [];
+      };
+      return _CtorPattern;
+    }()
+  };
+  return __net__devkat__compiler__ast__CtorPattern;
+}();
+Maxime.scope.__net__devkat__compiler__ast__FeatureDecl = function () {
+  var __net__devkat__compiler__ast__FeatureDecl = {};
+  __net__devkat__compiler__ast__FeatureDecl._FeatureDecl = {
+    _FeatureDecl: function () {
+      var _FeatureDecl = function () {
+        this._constructor = 'FeatureDecl';
+        this._properties = [];
+      };
+      return _FeatureDecl;
+    }()
+  };
+  return __net__devkat__compiler__ast__FeatureDecl;
+}();
+Maxime.scope.__net__devkat__compiler__ast__FunctionCall = function () {
+  var __net__devkat__compiler__ast__FunctionCall = {};
+  __net__devkat__compiler__ast__FunctionCall._FunctionCall = {
+    _FunctionCall: function () {
+      var _FunctionCall = function () {
+        this._constructor = 'FunctionCall';
+        this._properties = [];
+      };
+      return _FunctionCall;
+    }()
+  };
+  return __net__devkat__compiler__ast__FunctionCall;
+}();
+Maxime.scope.__net__devkat__compiler__ast__FunctionDecl = function () {
+  var __net__devkat__compiler__ast__FunctionDecl = {};
+  __net__devkat__compiler__ast__FunctionDecl._FunctionDecl = {
+    _FunctionDecl: function () {
+      var _FunctionDecl = function () {
+        this._constructor = 'FunctionDecl';
+        this._properties = [];
+      };
+      return _FunctionDecl;
+    }()
+  };
+  return __net__devkat__compiler__ast__FunctionDecl;
+}();
+Maxime.scope.__net__devkat__compiler__ast__FunctionExpr = function () {
+  var __net__devkat__compiler__ast__FunctionExpr = {};
+  __net__devkat__compiler__ast__FunctionExpr._FunctionExpr = {
+    _FunctionExpr: function () {
+      var _FunctionExpr = function () {
+        this._constructor = 'FunctionExpr';
+        this._properties = [];
+      };
+      return _FunctionExpr;
+    }()
+  };
+  return __net__devkat__compiler__ast__FunctionExpr;
+}();
+Maxime.scope.__net__devkat__compiler__ast__FunctionTypeRef = function () {
+  var __net__devkat__compiler__ast__FunctionTypeRef = {};
+  __net__devkat__compiler__ast__FunctionTypeRef._FunctionTypeRef = {
+    _FunctionTypeRef: function () {
+      var _FunctionTypeRef = function () {
+        this._constructor = 'FunctionTypeRef';
+        this._properties = [];
+      };
+      return _FunctionTypeRef;
+    }()
+  };
+  return __net__devkat__compiler__ast__FunctionTypeRef;
+}();
+Maxime.scope.__net__devkat__compiler__ast__Identifier = function () {
+  var __net__devkat__compiler__ast__Identifier = {};
+  __net__devkat__compiler__ast__Identifier._Identifier = {
+    _Identifier: function () {
+      var _Identifier = function () {
+        this._constructor = 'Identifier';
+        this._properties = [];
+      };
+      return _Identifier;
+    }()
+  };
+  return __net__devkat__compiler__ast__Identifier;
+}();
+Maxime.scope.__net__devkat__compiler__ast__ImportDecl = function () {
+  var __net__devkat__compiler__ast__ImportDecl = {};
+  __net__devkat__compiler__ast__ImportDecl._ImportDecl = {
+    _ImportDecl: function () {
+      var _ImportDecl = function () {
+        this._constructor = 'ImportDecl';
+        this._properties = [];
+      };
+      return _ImportDecl;
+    }()
+  };
+  return __net__devkat__compiler__ast__ImportDecl;
+}();
+Maxime.scope.__net__devkat__compiler__ast__Literal = function () {
+  var __net__devkat__compiler__ast__Literal = {};
+  __net__devkat__compiler__ast__Literal._Literal = {
+    _Literal: function () {
+      var _Literal = function () {
+        this._constructor = 'Literal';
+        this._properties = [];
+      };
+      return _Literal;
+    }()
+  };
+  return __net__devkat__compiler__ast__Literal;
+}();
+Maxime.scope.__net__devkat__compiler__ast__LiteralPattern = function () {
+  var __net__devkat__compiler__ast__LiteralPattern = {};
+  __net__devkat__compiler__ast__LiteralPattern._LiteralPattern = {
+    _LiteralPattern: function () {
+      var _LiteralPattern = function () {
+        this._constructor = 'LiteralPattern';
+        this._properties = [];
+      };
+      return _LiteralPattern;
+    }()
+  };
+  return __net__devkat__compiler__ast__LiteralPattern;
+}();
+Maxime.scope.__net__devkat__compiler__ast__MethodCall = function () {
+  var __net__devkat__compiler__ast__MethodCall = {};
+  __net__devkat__compiler__ast__MethodCall._MethodCall = {
+    _MethodCall: function () {
+      var _MethodCall = function () {
+        this._constructor = 'MethodCall';
+        this._properties = [];
+      };
+      return _MethodCall;
+    }()
+  };
+  return __net__devkat__compiler__ast__MethodCall;
+}();
+Maxime.scope.__net__devkat__compiler__ast__MethodDecl = function () {
+  var __net__devkat__compiler__ast__MethodDecl = {};
+  __net__devkat__compiler__ast__MethodDecl._MethodDecl = {
+    _MethodDecl: function () {
+      var _MethodDecl = function () {
+        this._constructor = 'MethodDecl';
+        this._properties = [];
+      };
+      return _MethodDecl;
+    }()
+  };
+  return __net__devkat__compiler__ast__MethodDecl;
+}();
+Maxime.scope.__net__devkat__compiler__ast__ModuleDecl = function () {
+  var __net__devkat__compiler__ast__ModuleDecl = {};
+  __net__devkat__compiler__ast__ModuleDecl._ModuleDecl = {
+    _ModuleDecl: function () {
+      var _ModuleDecl = function (_loc) {
+        this._constructor = 'ModuleDecl';
+        this._properties = [this._loc];
+        this._loc = _loc;
+      };
+      return _ModuleDecl;
+    }()
+  };
+  return __net__devkat__compiler__ast__ModuleDecl;
+}();
+Maxime.scope.__net__devkat__compiler__ast__NativeExpr = function () {
+  var __net__devkat__compiler__ast__NativeExpr = {};
+  __net__devkat__compiler__ast__NativeExpr._NativeExpr = {
+    _NativeExpr: function () {
+      var _NativeExpr = function () {
+        this._constructor = 'NativeExpr';
+        this._properties = [];
+      };
+      return _NativeExpr;
+    }()
+  };
+  return __net__devkat__compiler__ast__NativeExpr;
+}();
+Maxime.scope.__net__devkat__compiler__ast__Param = function () {
+  var __net__devkat__compiler__ast__Param = {};
+  __net__devkat__compiler__ast__Param._Param = {
+    _Param: function () {
+      var _Param = function () {
+        this._constructor = 'Param';
+        this._properties = [];
+      };
+      return _Param;
+    }()
+  };
+  return __net__devkat__compiler__ast__Param;
+}();
+Maxime.scope.__net__devkat__compiler__ast__Property = function () {
+  var __net__devkat__compiler__ast__Property = {};
+  __net__devkat__compiler__ast__Property._Property = {
+    _Property: function () {
+      var _Property = function () {
+        this._constructor = 'Property';
+        this._properties = [];
+      };
+      return _Property;
+    }()
+  };
+  return __net__devkat__compiler__ast__Property;
+}();
+Maxime.scope.__net__devkat__compiler__ast__PropertyAccess = function () {
+  var __net__devkat__compiler__ast__PropertyAccess = {};
+  __net__devkat__compiler__ast__PropertyAccess._PropertyAccess = {
+    _PropertyAccess: function () {
+      var _PropertyAccess = function () {
+        this._constructor = 'PropertyAccess';
+        this._properties = [];
+      };
+      return _PropertyAccess;
+    }()
+  };
+  return __net__devkat__compiler__ast__PropertyAccess;
+}();
+Maxime.scope.__net__devkat__compiler__ast__Ref = function () {
+  var __net__devkat__compiler__ast__Ref = {};
+  __net__devkat__compiler__ast__Ref._Ref = {
+    _Ref: function () {
+      var _Ref = function () {
+        this._constructor = 'Ref';
+        this._properties = [];
+      };
+      return _Ref;
+    }()
+  };
+  return __net__devkat__compiler__ast__Ref;
+}();
+Maxime.scope.__net__devkat__compiler__ast__TypeParam = function () {
+  var __net__devkat__compiler__ast__TypeParam = {};
+  __net__devkat__compiler__ast__TypeParam._TypeParam = {
+    _TypeParam: function () {
+      var _TypeParam = function () {
+        this._constructor = 'TypeParam';
+        this._properties = [];
+      };
+      return _TypeParam;
+    }()
+  };
+  return __net__devkat__compiler__ast__TypeParam;
+}();
+Maxime.scope.__net__devkat__compiler__ast__TypeParamRef = function () {
+  var __net__devkat__compiler__ast__TypeParamRef = {};
+  __net__devkat__compiler__ast__TypeParamRef._TypeParamRef = {
+    _TypeParamRef: function () {
+      var _TypeParamRef = function () {
+        this._constructor = 'TypeParamRef';
+        this._properties = [];
+      };
+      return _TypeParamRef;
+    }()
+  };
+  return __net__devkat__compiler__ast__TypeParamRef;
+}();
+Maxime.scope.__net__devkat__compiler__ast__ValDecl = function () {
+  var __net__devkat__compiler__ast__ValDecl = {};
+  __net__devkat__compiler__ast__ValDecl._ValDecl = {
+    _ValDecl: function () {
+      var _ValDecl = function () {
+        this._constructor = 'ValDecl';
+        this._properties = [];
+      };
+      return _ValDecl;
+    }()
+  };
+  return __net__devkat__compiler__ast__ValDecl;
+}();
+Maxime.scope.__net__devkat__compiler__ast__VariablePattern = function () {
+  var __net__devkat__compiler__ast__VariablePattern = {};
+  __net__devkat__compiler__ast__VariablePattern._VariablePattern = {
+    _VariablePattern: function () {
+      var _VariablePattern = function () {
+        this._constructor = 'VariablePattern';
+        this._properties = [];
+      };
+      return _VariablePattern;
+    }()
+  };
+  return __net__devkat__compiler__ast__VariablePattern;
+}();
+Maxime.scope.__net__devkat__compiler__ast__WildcardPattern = function () {
+  var __net__devkat__compiler__ast__WildcardPattern = {};
+  __net__devkat__compiler__ast__WildcardPattern._WildcardPattern = {
+    _WildcardPattern: function () {
+      var _WildcardPattern = function () {
+        this._constructor = 'WildcardPattern';
+        this._properties = [];
+      };
+      return _WildcardPattern;
+    }()
+  };
+  return __net__devkat__compiler__ast__WildcardPattern;
+}();
+Maxime.scope.__net__devkat__compiler__ast__WildcardTypeRef = function () {
+  var __net__devkat__compiler__ast__WildcardTypeRef = {};
+  __net__devkat__compiler__ast__WildcardTypeRef._WildcardTypeRef = {
+    _WildcardTypeRef: function () {
+      var _WildcardTypeRef = function () {
+        this._constructor = 'WildcardTypeRef';
+        this._properties = [];
+      };
+      return _WildcardTypeRef;
+    }()
+  };
+  return __net__devkat__compiler__ast__WildcardTypeRef;
+}();
+Maxime.scope.__net__devkat__compiler__Compiler = function () {
+  var __net__devkat__compiler__Compiler = {};
+  __net__devkat__compiler__Compiler._Compiler = {
+    _Compiler: function () {
+      var _Compiler = function () {
+        this._constructor = 'Compiler';
+        this._properties = [];
+      };
+      _Compiler.prototype._compile = function (_sources, _target, _options) {
+        var that = this;
+        return function () {
+          function _toString(_s) {
+            return _s._toString();
+          }
+          function _id(_s) {
+            return _s;
+          }
+          new Maxime.scope.__maxime__String._String._String('Compiling ').__plus_(_sources._join(_id, new Maxime.scope.__maxime__String._String._String(', '))).__plus_(new Maxime.scope.__maxime__String._String._String(' to ')).__plus_(_target)._println();
+          function _mkFile(_s) {
+            return new Maxime.scope.__maxime__io__File._File._File(new Maxime.scope.__maxime__io__Path._Path._Path(_s._split(new Maxime.scope.__maxime__String._String._String('/')), new Maxime.scope.__maxime__Bool._Bool._True()));
+          }
+          var _sourceDirs = _sources._map(_mkFile);
+          var _CompilationUnit = {
+              _CompilationUnit: function () {
+                var _CompilationUnit = function (_root, _maxFiles, _jsFiles) {
+                  this._constructor = 'CompilationUnit';
+                  this._properties = [
+                    this._root,
+                    this._maxFiles,
+                    this._jsFiles
+                  ];
+                  this._root = _root;
+                  this._maxFiles = _maxFiles;
+                  this._jsFiles = _jsFiles;
+                };
+                _CompilationUnit.prototype._toString = function () {
+                  var that = this;
+                  return that._root;
+                };
+                return _CompilationUnit;
+              }()
+            };
+          function _mkCompilationUnit(_root) {
+            return function () {
+              var _maxFiles = new Maxime.scope.__maxime__io__FileSystem._FileSystem._FileSystem()._findFiles(_root, new Maxime.scope.__maxime__RegExp._RegExp._RegExp(new Maxime.scope.__maxime__String._String._String('\\.max$'), new Maxime.scope.__maxime__String._String._String('')));
+              var _jsFiles = new Maxime.scope.__maxime__io__FileSystem._FileSystem._FileSystem()._findFiles(_root, new Maxime.scope.__maxime__RegExp._RegExp._RegExp(new Maxime.scope.__maxime__String._String._String('\\.js$'), new Maxime.scope.__maxime__String._String._String('')));
+              return new _CompilationUnit._CompilationUnit(_root, _maxFiles, _jsFiles);
+            }();
+          }
+          var _compilationUnits = _sourceDirs._map(_mkCompilationUnit);
+          new Maxime.scope.__maxime__String._String._String('Compilation units: ').__plus_(_compilationUnits._map(_toString)._join(_id, new Maxime.scope.__maxime__String._String._String(',')))._println();
+          function _compileUnit(_unit) {
+            return function () {
+              function _readSource(_file) {
+                return new Maxime.scope.__net__devkat__compiler__Source._Source._Source(new Maxime.scope.__maxime__io__FileSystem._FileSystem._FileSystem()._read(new Maxime.scope.__maxime__io__File._File._File(_unit._root._path.__slash_(_file._path))), _file);
+              }
+              function _generate(_source) {
+                return _source;
+              }
+              function _compileSource(_source) {
+                return function () {
+                  var _moduleName = _source._file._path._segments._join(_id, new Maxime.scope.__maxime__String._String._String('.'))._replace(new Maxime.scope.__maxime__String._String._String('\\.max$'), new Maxime.scope.__maxime__String._String._String(''));
+                  new Maxime.scope.__maxime__String._String._String('Compiling module ').__plus_(_moduleName)._println();
+                  var _ast = new Maxime.scope.__net__devkat__compiler__Parser._Parser._Parser()._parse(_source);
+                  return _generate(_ast);
+                }();
+              }
+              function _getCode(_s) {
+                return _s._code;
+              }
+              var _jsSources = _unit._jsFiles._map(_readSource)._map(_getCode);
+              var _maxTargets = _unit._maxFiles._map(_readSource)._map(_compileSource);
+              console.log(_maxTargets);
+              return _jsSources.__plus__plus_(_maxTargets._map(_toString))._join(_id, new Maxime.scope.__maxime__String._String._String('\n'));
+            }();
+          }
+          var _codes = _compilationUnits._map(_compileUnit);
+          var _code = _codes._join(_id, new Maxime.scope.__maxime__String._String._String('\\n'));
+          return _code;
+        }();
+      };
+      return _Compiler;
+    }()
+  };
+  __net__devkat__compiler__Compiler._compile = function (_sources, _target, _options) {
+    return new Maxime.scope.__net__devkat__compiler__Compiler._Compiler._Compiler()._compile(_sources, _target, _options);
+  };
+  return __net__devkat__compiler__Compiler;
+}();
+Maxime.scope.__net__devkat__compiler__Location = function () {
+  var __net__devkat__compiler__Location = {};
+  __net__devkat__compiler__Location._Location = {
+    _Location: function () {
+      var _Location = function () {
+        this._constructor = 'Location';
+        this._properties = [];
+      };
+      return _Location;
+    }()
+  };
+  return __net__devkat__compiler__Location;
+}();
+Maxime.scope.__net__devkat__compiler__Source = function () {
+  var __net__devkat__compiler__Source = {};
+  __net__devkat__compiler__Source._Source = {
+    _Source: function () {
+      var _Source = function (_code, _file) {
+        this._constructor = 'Source';
+        this._properties = [
+          this._code,
+          this._file
+        ];
+        this._code = _code;
+        this._file = _file;
+      };
+      _Source.prototype._toString = function () {
+        var that = this;
+        return that._file._toString();
+      };
+      return _Source;
+    }()
+  };
+  return __net__devkat__compiler__Source;
+}();
+Maxime.scope.__net__devkat__compiler__Tree = function () {
+  var __net__devkat__compiler__Tree = {};
+  __net__devkat__compiler__Tree._Tree = {
+    _Tree: function () {
+      var _Tree = function () {
+        this._constructor = 'Tree';
+        this._properties = [];
+      };
+      return _Tree;
+    }()
+  };
+  return __net__devkat__compiler__Tree;
+}();
 Maxime.scope.__stdlib = function () {
   var __stdlib = {};
   __stdlib._Pair = {
@@ -1662,4 +2089,4 @@ Maxime.scope.__svg = function () {
   };
   return __svg;
 }();
-/*console.log(Maxime.scope);*/ module.exports = function(sources, target, options) { Maxime.scope.__maxime__compiler__Compiler._compile(EcmaScript.js2max(sources), EcmaScript.js2max(target), options); };
+/*console.log(Maxime.scope);*/ module.exports = function(sources, target, options) { Maxime.scope.__net__devkat__compiler__Compiler._compile(EcmaScript.js2max(sources), EcmaScript.js2max(target), options); };

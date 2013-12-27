@@ -1,0 +1,6 @@
+import net.devkat.compiler.Tree
+import net.devkat.compiler.Source
+
+class Parser
+  Parser
+  parse(s:Source) → Tree = Tree

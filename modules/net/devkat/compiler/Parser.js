@@ -4,7 +4,7 @@ function loc(start, end) {
   var sprintf = require('sprintf');
   return sprintf("$$.loc = yy.src.loc(@%d, @%d);", start, end);
 }
-        
+
 var maximeGrammar = {
   "bnf": {
 
@@ -13,8 +13,8 @@ var maximeGrammar = {
    ---------------------------------------------------------------------- */
 
     "module": [
-      [ "statements EOF", "$$ = new yy.ModuleDecl($1);" + loc(1, 2) + "return $$;" ],
-      [ "NEWLINE statements EOF", "$$ = new yy.ModuleDecl($2);" + loc(1, 3) + "return $$;" ]
+      [ "statements EOF", "$$ = yy.ModuleDecl($1);" + loc(1, 2) + "return $$;" ],
+      [ "NEWLINE statements EOF", "$$ = yy.ModuleDecl($2);" + loc(1, 3) + "return $$;" ]
     ],
     
     "statements": [
@@ -178,7 +178,7 @@ var maximeGrammar = {
    ---------------------------------------------------------------------- */
   
     "lambdaExpr": [
-      [ "LAMBDA lambdaParams RIGHT_ARROW atomicExpr", "$$ = new yy.LambdaExpr($2, $4);" + loc(1, 4) ]
+      [ "LAMBDA lambdaParams RIGHT_ARROW atomicExpr", "$$ = new yy.FunctionExpr($2, $4);" + loc(1, 4) ]
     ],
     
     "lambdaParams": [
@@ -212,7 +212,7 @@ var maximeGrammar = {
       [ "ctorPattern", "$$ = $1;" ],
       [ "literal", "$$ = new yy.LiteralPattern($1);" + loc(1) ],
       [ "lcIdentifier", "$$ = new yy.VariablePattern($1);" + loc(1) ],
-      [ "wildcard", "$$ = new yy.WildcardPattern();" + loc(1) ]
+      [ "_", "$$ = new yy.WildcardPattern();" + loc(1) ]
     ],
 
     "ctorPattern": [
@@ -230,10 +230,6 @@ var maximeGrammar = {
       [ "ctorPatternArgList , pattern", "$$ = $1.concat([ $3 ]);" ]
     ],
     
-    "wildcard": [
-      [ "_", "$$ = new yy.Wildcard();" + loc(1, 1) ]
-    ],
-
 /* ----------------------------------------------------------------------
    Declarations
    ---------------------------------------------------------------------- */
@@ -500,9 +496,9 @@ var maximeGrammar = {
   }
 };
 
-Maxime.scope.__maxime__compiler__Parser = function () {
-  var __maxime__compiler__Parser = {};
-  __maxime__compiler__Parser._Parser = {
+Maxime.scope.__net__devkat__compiler__Parser = function () {
+  var __net__devkat__compiler__Parser = {};
+  __net__devkat__compiler__Parser._Parser = {
     _Parser: function () {
       var _Parser = function () {
         this._constructor = 'Parser';
@@ -543,6 +539,47 @@ Maxime.scope.__maxime__compiler__Parser = function () {
           this.column = column;
         };
         
+        [
+          'BinaryExpr',
+          'BlockExpr',
+          'CaseClause',
+          'CaseExpr',
+          'ClassDecl',
+          'ClassRef',
+          'CtorCall',
+          'CtorDecl',
+          'CtorPattern',
+          'FeatureDecl',
+          'FunctionCall',
+          'FunctionDecl',
+          'FunctionExpr',
+          'FunctionTypeRef',
+          'Identifier',
+          'ImportDecl',
+          'Literal',
+          'LiteralPattern',
+          'MethodCall',
+          'MethodDecl',
+          'ModuleDecl',
+          'NativeExpr',
+          'Param',
+          'Property',
+          'PropertyAccess',
+          'Ref',
+          'TypeParam',
+          'TypeParamRef',
+          'ValDecl',
+          'VariablePattern',
+          'WildcardPattern',
+          'WildcardTypeRef'
+        ].forEach(function(type) {
+          //yy[type] = function() {console.log(type, typeof Maxime.scope['__net__devkat__compiler__ast__' + type]['_' + type]['_' + type]);};
+          yy[type] = function() {
+            return new Maxime.scope['__net__devkat__compiler__ast__' + type]['_' + type]['_' + type]();
+          };
+        });
+        
+        
         parser.yy = yy;
         
         var
@@ -555,5 +592,5 @@ Maxime.scope.__maxime__compiler__Parser = function () {
       return _Parser;
     }()
   };
-  return __maxime__compiler__Parser;
+  return __net__devkat__compiler__Parser;
 } ();

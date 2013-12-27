@@ -1,6 +1,0 @@
-import maxime.compiler.Tree
-import maxime.compiler.Source
-
-class Parser
-  Parser
-  parse(s:Source) → Tree = Tree

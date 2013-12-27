@@ -3,8 +3,8 @@ import maxime.Map
 import maxime.io.File
 import maxime.io.FileSystem
 import maxime.RegExp
-import maxime.compiler.Source
-import maxime.compiler.Parser
+import net.devkat.compiler.Source
+import net.devkat.compiler.Parser
 
 class Compiler
   Compiler
@@ -44,8 +44,8 @@ class Compiler
     
       def getCode(s:Source) -> String = s.code
       val jsSources = unit.jsFiles.map(readSource).map(getCode)
-      val maxSources = unit.maxFiles.map(readSource)
-      val maxTargets = maxSources.map(compileSource)
+      val maxTargets = unit.maxFiles.map(readSource).map(compileSource)
+      `console.log(_maxTargets)`
       (jsSources ++ maxTargets.map(toString)).join(id, "
 ")
     
