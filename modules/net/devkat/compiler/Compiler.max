@@ -5,6 +5,7 @@ import maxime.io.FileSystem
 import maxime.RegExp
 import net.devkat.compiler.Source
 import net.devkat.compiler.Parser
+import net.devkat.compiler.SymbolTable
 
 class Compiler
   Compiler
@@ -49,6 +50,7 @@ class Compiler
       (jsSources ++ maxTargets.map(toString)).join(id, "
 ")
     
+    val symbolTable = SymbolTable()
     val codes = compilationUnits.map(compileUnit)
     val code = codes.join(id, "\n")
     //val runtimeLib = readFile("runtime/Maxime.js")

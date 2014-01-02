@@ -1,0 +1,24 @@
+import maxime.Map
+import maxime.String
+import net.devkat.compiler.Location
+import net.devkat.compiler.Tree
+
+class SymbolType
+  Constructor
+  Module
+  Type
+  Object
+
+def mapValue[a is Eq, b](map: Map[a, b], key: a, f: b -> b) -> Map[a, b] =
+  map match
+    case EmptyMap => EmptyMap
+    case Map(mapKey, value, rest) =>
+      if (key == mapKey)
+        then Map(key, f(value), rest)
+        else Map(key, value, mapValue(rest))
+
+class SymbolTable
+  SymbolTable(name: String, parent: Option[SymbolTable], tables: Map[SymbolType, Map[String, Node]])
+  add(loc: Location, name: String, obj: Node) -> SymbolTable =
+    def insert(table: Map[String, Node]) -> Map[String, Node] = table.put(name, obj)
+    SymbolTable(name, parent, mapValue(tables, obj.type, insert))

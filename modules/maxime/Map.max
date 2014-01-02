@@ -1,5 +1,6 @@
 import maxime.Option
 import maxime.Eq
+import maxime.Bool
 
 class Map[a is Eq, b is Eq]
 

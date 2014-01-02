@@ -1,2 +1,8 @@
+import maxime.String
+
+class Node
+  Node(type: String)
+
 class Tree
   Tree
+
